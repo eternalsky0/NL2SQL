@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Drivee Analytics</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #f3f4f6; padding: 20px; }
+    .app { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .tabs { display: flex; gap: 20px; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+    .tab { padding: 10px; cursor: pointer; color: #666; }
+    .tab.active { color: #A3E635; border-bottom: 2px solid #A3E635; font-weight: bold; }
+    .msg { padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #f9fafb; border: 1px solid #eee; }
+    .kpi { background: #f0fdf4; padding: 20px; border-radius: 10px; text-align: center; }
+    .kpi h2 { font-size: 35px; color: #16a34a; margin: 5px 0; }
+    .input-wrap { position: relative; margin-top: 20px; }
+    input { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #ddd; outline: none; }
+    .btn-save { background: #A3E635; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    .report-item { border: 1px solid #eee; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; }
+    .badge { background: #dcf4e3; color: #166534; padding: 3px 8px; font-size: 10px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+function Visual({ data, type }) {
+  const canvas = useRef(null);
+  if (data.rows.length === 1 && data.columns.length === 1) {
+    return <div className="kpi"><div>{data.columns[0]}</div><h2>{Math.round(data.rows[0][0]).toLocaleString()}</h2></div>;
+  }
+  useEffect(() => {
+    if (!canvas.current) return;
+    const ctx = canvas.current.getContext('2d');
+    const chart = new Chart(ctx, {
+      type: type === 'pie' ? 'pie' : 'bar',
+      data: { labels: data.rows.map(r => r[0]), datasets: [{ label: data.columns[1], data: data.rows.map(r => r[1]), backgroundColor: '#A3E635' }] }
+    });
+    return () => chart.destroy();
+  }, [data]);
+  return <canvas ref={canvas}></canvas>;
+}
+
+function App() {
+  const [tab, setTab] = useState('chat');
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState("");
+  const [reps, setReps] = useState([]);
+
+  const ask = async (q) => {
+    setMsgs([...msgs, { role: 'user', text: q }]);
+    const res = await fetch('http://localhost:8000/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
+    const data = await res.json();
+    setMsgs(prev => [...prev, { role: 'bot', data }]);
+  };
+
+  const save = async (m, sched = null) => {
+    const name = prompt("Название отчета:");
+    if (!name) return;
+    await fetch('http://localhost:8000/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, question: m.data.question, sql: m.data.sql, chart_type: m.data.chart_type, schedule: sched }) });
+    alert("Сохранено!");
+  };
+
+  useEffect(() => { if (tab === 'cat') fetch('http://localhost:8000/reports').then(r => r.json()).then(setReps); }, [tab]);
+
+  return (
+    <div className="app">
+      <h2>Drivee Analytics 🚕</h2>
+      <div className="tabs">
+        <div className={`tab ${tab === 'chat' ? 'active' : ''}`} onClick={() => setTab('chat')}>Чат</div>
+        <div className={`tab ${tab === 'cat' ? 'active' : ''}`} onClick={() => setTab('cat')}>Каталог</div>
+      </div>
+
+      {tab === 'chat' ? (
+        <div>
+          {msgs.map((m, i) => (
+            <div key={i} className="msg">
+              {m.role === 'user' ? <b>Вы: {m.text}</b> : 
+                <div>
+                  <p>🤖 {m.data.explanation}</p>
+                  <Visual data={m.data.data} type={m.data.chart_type} />
+                  <button className="btn-save" onClick={() => save(m)}>💾 Сохранить</button>
+                  <button className="btn-save" style={{marginLeft:10, background:'#eee'}} onClick={() => save(m, "Пн, 09:00")}>⏰ В рассылку</button>
+                </div>
+              }
+            </div>
+          ))}
+          <div className="input-wrap">
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (ask(input), setInput(""))} placeholder="Спроси что-нибудь..." />
+          </div>
+        </div>
+      ) : (
+        <div>
+          {reps.map(r => (
+            <div className="report-item" key={r.id}>
+              <div><b>{r.name}</b> {r.is_approved ? <span className="badge">APPROVED</span> : ""} <br/> <small>{r.question}</small> </div>
+              <button onClick={() => {setTab('chat'); ask(r.question)}}>Открыть</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
