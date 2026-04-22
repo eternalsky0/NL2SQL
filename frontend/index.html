@@ -9,472 +9,188 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-           background: #f6f7f9; color: #1a1a1a; }
-    .app { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .logo { font-size: 22px; font-weight: 600; }
-    .logo span { color: #6b50e9; }
-    .status { font-size: 12px; color: #666; }
-    .status.ok { color: #1a8a3e; }
-    .status.err { color: #c93030; }
-
-    .chat { display: flex; flex-direction: column; gap: 14px; }
-    .message { padding: 14px 18px; border-radius: 12px; line-height: 1.5; max-width: 88%; }
-    .message.user { background: #eceafd; color: #2b1f6a; align-self: flex-end; }
-    .message.bot { background: #fff; border: 1px solid #e6e6ea; align-self: flex-start; width: 100%; max-width: 100%; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f6f7f9; color: #1a1a1a; }
+    .app { max-width: 900px; margin: 40px auto; padding: 24px; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .header { font-size: 24px; font-weight: bold; margin-bottom: 24px; color: #111827; }
+    .header span { color: #A3E635; }
+    
+    .chat { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+    .msg { padding: 16px; border-radius: 12px; line-height: 1.5; font-size: 15px; }
+    .msg.user { background: #f3f4f6; align-self: flex-end; color: #111827; font-weight: 500; }
+    .msg.bot { background: #fff; border: 1px solid #e5e7eb; width: 100%; }
 
     .input-wrap { position: relative; }
+    .input-box { width: 100%; height: 60px; padding: 18px 110px 18px 18px; border-radius: 12px; border: 2px solid #e5e7eb; font-size: 16px; font-family: inherit; resize: none; outline: none; position: relative; z-index: 2; background: transparent; }
+    .input-box:focus { border-color: #A3E635; }
+    
+    .ghost { position: absolute; top: 0; left: 0; padding: 18px; font-size: 16px; color: #9ca3af; z-index: 1; pointer-events: none; }
+    .ghost span { color: transparent; }
 
-    .input-box {
-      width: 100%; min-height: 60px; padding: 16px 110px 16px 18px; border-radius: 14px;
-      border: 1px solid #d8d8e0; background: transparent; font: inherit; font-size: 16px;
-      font-family: inherit; resize: none; line-height: 1.5; outline: none;
-      position: relative; z-index: 2; color: #1a1a1f;
-      box-sizing: border-box;
-    }
-    .input-box:focus { border-color: #6b50e9; box-shadow: 0 0 0 3px rgba(107,80,233,.12); }
+    .btn { position: absolute; right: 8px; top: 8px; height: 44px; padding: 0 20px; border-radius: 8px; border: none; background: #A3E635; color: #111; font-weight: 600; cursor: pointer; z-index: 3; }
+    .btn:disabled { background: #d1d5db; cursor: not-allowed; }
 
-    .ghost-layer {
-      position: absolute; top: 0; left: 0; width: 100%;
-      padding: 16px 110px 16px 18px;
-      font-family: inherit; font-size: 16px; line-height: 1.5;
-      pointer-events: none; z-index: 1;
-      white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word;
-      color: transparent;
-      border: 1px solid transparent;
-      box-sizing: border-box;
-      background: #fff;
-      border-radius: 14px;
-    }
-    .ghost-layer .typed { color: transparent; }
-    .ghost-layer .suggestion { color: #b2b2ba; }
+    .explanation { background: #f9fafb; padding: 12px; border-radius: 8px; color: #4b5563; margin-bottom: 16px; border-left: 4px solid #A3E635; }
+    .sql-code { background: #1f2937; color: #e5e7eb; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; margin: 12px 0; overflow-x: auto; }
+    
+    .kpi-card { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 24px; border-radius: 12px; text-align: center; margin: 16px 0; }
+    .kpi-title { font-size: 14px; color: #166534; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 40px; font-weight: bold; color: #15803d; margin-top: 8px; }
 
-    .submit-btn {
-      position: absolute; right: 8px; top: 8px; z-index: 3; height: 44px; padding: 0 18px;
-      border-radius: 10px; border: 0; background: #6b50e9; color: white; font-weight: 500;
-      cursor: pointer; font-size: 14px;
-    }
-    .submit-btn:disabled { background: #c4bbee; cursor: not-allowed; }
-    .hint { font-size: 12px; color: #8a8a94; margin-top: 6px; padding-left: 4px; }
-
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-    .chip {
-      padding: 8px 14px; border-radius: 999px; border: 1px solid #d8d8e0; background: #fff;
-      cursor: pointer; font-size: 13px; color: #3a3a42; transition: all .15s;
-    }
-    .chip:hover { background: #6b50e9; color: white; border-color: #6b50e9; }
-    .chip.template { background: #f4f2ff; border-color: #d5ccff; color: #4a3aa8; }
-
-    .result { padding: 16px; }
-    .result-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-    .confidence { font-size: 12px; padding: 3px 10px; border-radius: 999px; font-weight: 500; }
-    .confidence.high { background: #dcf4e3; color: #1a8a3e; }
-    .confidence.mid { background: #fff4d6; color: #8a6516; }
-    .confidence.low { background: #fde3e3; color: #c93030; }
-    .timing { font-size: 11px; color: #8a8a94; }
-
-    .explanation { background: #f4f2ff; padding: 10px 14px; border-radius: 8px;
-                    font-size: 14px; color: #4a3aa8; margin-bottom: 12px; border-left: 3px solid #6b50e9; }
-
-    .sql-block { margin: 12px 0; }
-    .sql-block summary { cursor: pointer; font-size: 13px; color: #6b50e9; user-select: none; padding: 4px 0; }
-    .sql-code {
-      background: #1f1e2e; color: #c9c9d4; padding: 14px 16px; border-radius: 8px;
-      font-family: "SF Mono", Consolas, monospace; font-size: 13px; overflow-x: auto;
-      white-space: pre; margin-top: 8px;
-    }
-
-    .chart-wrap { margin: 16px 0; background: white; padding: 12px; border-radius: 8px;
-                    border: 1px solid #e6e6ea; height: 340px; }
-    table.data { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
-    table.data th { background: #f4f2ff; padding: 8px 12px; text-align: left; font-weight: 500; color: #4a3aa8; }
-    table.data td { padding: 8px 12px; border-top: 1px solid #eee; }
-
-    .insights { background: #fffbf0; border-left: 3px solid #f0b030; padding: 12px 16px;
-                 border-radius: 8px; margin: 12px 0; }
-    .insights h4 { margin: 0 0 6px; font-size: 13px; color: #8a6516; }
-    .insights ul { margin: 0; padding-left: 18px; font-size: 14px; }
-    .insights li { margin: 4px 0; }
-
-    .followups { margin-top: 12px; }
-    .followups .label { font-size: 12px; color: #666; margin-bottom: 6px; }
-
-    .actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; }
-    .btn-sec { padding: 6px 12px; font-size: 13px; border-radius: 6px; background: #f2f2f6;
-                border: 1px solid #d8d8e0; cursor: pointer; }
-    .btn-sec:hover { background: #eceafd; }
-
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ddd;
-                border-top-color: #6b50e9; border-radius: 50%; animation: spin .8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .error { background: #fde3e3; border-left: 3px solid #c93030; padding: 10px 14px;
-              border-radius: 6px; color: #7a1e1e; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 16px; }
+    th { background: #f3f4f6; padding: 10px; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+    
+    .chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .chip { padding: 6px 12px; background: #f3f4f6; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1px solid #e5e7eb; }
+    .chip:hover { background: #e5e7eb; border-color: #d1d5db; }
   </style>
 </head>
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react">
-const { useState, useRef, useEffect, useCallback } = React;
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
 const API = "http://localhost:8000";
 
-function confidenceClass(c) {
-  if (c >= 0.75) return "high";
-  if (c >= 0.5) return "mid";
-  return "low";
-}
-
-function ChartView({ chartType, columns, rows }) {
+function ChartOrKPI({ chartType, columns, rows }) {
   const canvasRef = useRef(null);
-  const chartRef = useRef(null);
 
-  useEffect(() => {
-    if (!canvasRef.current || chartType === "table" || rows.length === 0) return;
-    if (chartRef.current) chartRef.current.destroy();
-
-    const labels = rows.map(r => String(r[0]));
-    const values = rows.map(r => Number(r[1]) || 0);
-    const colors = ["#6b50e9","#8a73f0","#a996f5","#c9bafa","#6b50e9","#8a73f0","#a996f5","#c9bafa"];
-
-    const cfg = {
-      type: chartType === "pie" ? "pie" : (chartType === "line" ? "line" : "bar"),
-      data: {
-        labels,
-        datasets: [{
-          label: columns[1] || "значение",
-          data: values,
-          backgroundColor: chartType === "pie" ? colors : "#6b50e9",
-          borderColor: "#6b50e9",
-          borderWidth: 2,
-          tension: 0.3,
-          fill: chartType === "line" ? false : true,
-        }],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: chartType === "pie" } },
-        scales: chartType === "pie" ? {} : {
-          y: { beginAtZero: true },
-        },
-      },
-    };
-
-    chartRef.current = new Chart(canvasRef.current, cfg);
-    return () => { if (chartRef.current) chartRef.current.destroy(); };
-  }, [chartType, columns, rows]);
-
-  if (chartType === "table" || rows.length === 0) {
+  // === НОВАЯ ЛОГИКА ИЗ ВТОРОГО РЕШЕНИЯ: KPI-карточка ===
+  if (columns.length === 1 && rows.length === 1) {
+    const val = rows[0][0];
+    const formatted = typeof val === 'number' ? new Intl.NumberFormat('ru-RU').format(Math.round(val)) : val;
     return (
-      <table className="data">
+      <div className="kpi-card">
+        <div className="kpi-title">{columns[0].replace(/_/g, ' ')}</div>
+        <div className="kpi-value">{formatted}</div>
+      </div>
+    );
+  }
+
+  // Таблица, если данных много или явно просят
+  if (chartType === "table" || rows.length === 0 || rows.length > 50) {
+    return (
+      <table>
         <thead><tr>{columns.map(c => <th key={c}>{c}</th>)}</tr></thead>
         <tbody>
-          {rows.slice(0, 50).map((r, i) => (
-            <tr key={i}>{r.map((v, j) => <td key={j}>{v === null ? "—" : String(v)}</td>)}</tr>
+          {rows.slice(0, 15).map((r, i) => (
+            <tr key={i}>{r.map((v, j) => <td key={j}>{v}</td>)}</tr>
           ))}
         </tbody>
       </table>
     );
   }
 
-  return <div className="chart-wrap"><canvas ref={canvasRef} /></div>;
-}
+  // Отрисовка графиков
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const chart = new Chart(canvasRef.current, {
+      type: chartType === "pie" ? "pie" : "bar",
+      data: {
+        labels: rows.map(r => r[0]),
+        datasets:[{
+          label: columns[1] || 'Значение',
+          data: rows.map(r => Number(r[1]) || 0),
+          backgroundColor: '#A3E635'
+        }]
+      }
+    });
+    return () => chart.destroy();
+  }, [chartType, columns, rows]);
 
-function ResultCard({ result, onFollowup, onSaveReport }) {
-  if (result.error) {
-    return (
-      <div className="message bot">
-        <div className="error">
-          <b>Ошибка:</b> {result.message}
-          {result.sql && <div className="sql-code" style={{marginTop:8}}>{result.sql}</div>}
-        </div>
-      </div>
-    );
-  }
-  if (result.needs_clarification) {
-    return (
-      <div className="message bot">
-        <div className="result">
-          <div className="explanation">{result.clarification}</div>
-        </div>
-      </div>
-    );
-  }
-  if (!result.data || !result.data.columns) {
-  return (
-    <div className="message bot">
-      <div className="error">
-        <b>Не удалось получить данные.</b> Сервер вернул неожиданный ответ:
-        <pre style={{marginTop:8, fontSize:12, whiteSpace:"pre-wrap"}}>
-          {JSON.stringify(result, null, 2)}
-        </pre>
-      </div>
-    </div>
-  );
-}
-
-  const { sql, explanation, chart_type, confidence, data, insights, followups, timings } = result;
-  const cls = confidenceClass(confidence);
-
-  return (
-    <div className="message bot">
-      <div className="result">
-        <div className="result-row">
-          <span className={`confidence ${cls}`}>
-            Уверенность: {(confidence * 100).toFixed(0)}%
-          </span>
-          {timings && <span className="timing">
-            · LLM {timings.llm_ms}мс · SQL {timings.sql_ms}мс · всего {timings.total_ms}мс
-          </span>}
-        </div>
-
-        <div className="explanation">{explanation}</div>
-
-        <ChartView chartType={chart_type} columns={data.columns} rows={data.rows} />
-
-        {insights && insights.length > 0 && (
-          <div className="insights">
-            <h4>Инсайты</h4>
-            <ul>{insights.map((x, i) => <li key={i}>{x}</li>)}</ul>
-          </div>
-        )}
-
-        <details className="sql-block">
-          <summary>Посмотреть SQL-запрос</summary>
-          <div className="sql-code">{sql}</div>
-        </details>
-
-        {followups && followups.length > 0 && (
-          <div className="followups">
-            <div className="label">Спросить дальше:</div>
-            <div className="chips">
-              {followups.map((f, i) => (
-                <span key={i} className="chip" onClick={() => onFollowup(f)}>{f}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="actions">
-          <button className="btn-sec" onClick={() => onSaveReport(result)}>Сохранить отчёт</button>
-          <button className="btn-sec" onClick={() => {
-            const blob = new Blob([data.rows.map(r => r.join(";")).join("\n")],
-              {type: "text/csv;charset=utf-8"});
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "report.csv";
-            a.click();
-          }}>Экспорт CSV</button>
-        </div>
-      </div>
-    </div>
-  );
+  return <div style={{height: 300, marginTop: 16}}><canvas ref={canvasRef}/></div>;
 }
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [ghost, setGhost] = useState("");
-  const [chips, setChips] = useState([
-    "покажи отмены по городам за прошлую неделю",
-    "динамика выручки за последний месяц",
-    "средний чек по классам машин",
-    "топ 10 водителей по поездкам",
-  ]);
   const [loading, setLoading] = useState(false);
-  const [health, setHealth] = useState(null);
-  const abortRef = useRef(null);
-  const debounceRef = useRef(null);
 
-  // --- health check ---
-  useEffect(() => {
-    fetch(`${API}/health`).then(r => r.json()).then(setHealth).catch(() => setHealth({error: true}));
-  }, []);
-
-  // --- GHOST TEXT ---
-  const fetchGhost = useCallback(async (prefix) => {
-    if (prefix.trim().length < 3) { setGhost(""); return; }
-    if (abortRef.current) abortRef.current.abort();
-    abortRef.current = new AbortController();
-    setGhost("");
+  const fetchGhost = async (text) => {
+    if (text.length < 3) return setGhost("");
     try {
-      const r = await fetch(`${API}/suggest/ghost`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({prefix}),
-        signal: abortRef.current.signal,
+      const res = await fetch(`${API}/suggest/ghost`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({prefix: text})
       });
-      const reader = r.body.getReader();
+      const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf = "";
-      let collected = "";
+      let streamTxt = "";
       while (true) {
         const {value, done} = await reader.read();
         if (done) break;
-        buf += decoder.decode(value, {stream: true});
-        const lines = buf.split("\n");
-        buf = lines.pop();
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const payload = line.slice(6);
-          if (payload === "[DONE]") break;
-          try {
-            const obj = JSON.parse(payload);
-            if (obj.text) {
-              collected += obj.text;
-              // Санитизация в реальном времени: если ответ совпадает с префиксом — отрезаем
-              let clean = collected.trim();
-              if (clean.toLowerCase().startsWith(prefix.toLowerCase().trim())) {
-                clean = clean.slice(prefix.length).replace(/^\s+/, "");
-              }
-              setGhost(clean);
-            }
-          } catch {}
+        const chunk = decoder.decode(value);
+        const match = chunk.match(/"text":\s*"([^"]+)"/);
+        if (match) {
+          streamTxt += match[1];
+          setGhost(streamTxt);
         }
       }
-    } catch (e) { /* aborted */ }
-  }, []);
+    } catch {}
+  };
 
-  // Debounced ghost-text при вводе
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchGhost(input), 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [input, fetchGhost]);
+    const t = setTimeout(() => fetchGhost(input), 400);
+    return () => clearTimeout(t);
+  }, [input]);
 
-  // --- CHIPS ---
-  const fetchChips = useCallback(async (text) => {
-    try {
-      const history = messages.filter(m => m.role === "user").slice(-2).map(m => m.content);
-      const r = await fetch(`${API}/suggest/chips`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({input: text, history}),
-      });
-      const data = await r.json();
-      if (data.suggestions && data.suggestions.length) setChips(data.suggestions);
-    } catch (e) {}
-  }, [messages]);
-
-  // --- ОТПРАВКА ЗАПРОСА ---
-  const submit = async (text) => {
-    if (!text.trim() || loading) return;
-    setMessages(m => [...m, {role: "user", content: text}]);
-    setInput("");
-    setGhost("");
-    setLoading(true);
-
+  const ask = async (q) => {
+    if (!q) return;
+    setMessages(m =>[...m, {role: "user", content: q}]);
+    setInput(""); setGhost(""); setLoading(true);
     try {
       const r = await fetch(`${API}/query`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({question: text, history: messages}),
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({question: q})
       });
-      const result = await r.json();
-      if (!r.ok) {
-        const msg = result?.detail || `HTTP ${r.status}`;
-        setMessages(m => [...m, {role: "bot", content: {error: "server", message: msg}}]);
-      } else {
-        setMessages(m => [...m, {role: "bot", content: result}]);
-      }
-      setTimeout(() => fetchChips(""), 100);
+      const data = await r.json();
+      setMessages(m => [...m, {role: "bot", data}]);
     } catch (e) {
-      setMessages(m => [...m, {role: "bot", content: {error: "network", message: e.message}}]);
+      setMessages(m =>[...m, {role: "bot", data: {error: "error", message: e.message}}]);
     }
     setLoading(false);
   };
 
-  // --- KEYBOARD HANDLERS ---
-  const handleKeyDown = (e) => {
-    if (e.key === "Tab" && ghost) {
-      e.preventDefault();
-      setInput(input + (ghost.startsWith(" ") ? "" : " ") + ghost);
-      setGhost("");
-    } else if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      submit(input);
-    } else if (e.key === "Escape") {
-      setGhost("");
-    }
-  };
-
-  const handleSaveReport = async (result) => {
-    const name = prompt("Название отчёта:", messages[messages.length - 2]?.content?.slice(0, 50) || "Отчёт");
-    if (!name) return;
-    await fetch(`${API}/reports`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        name,
-        question: messages[messages.length - 2]?.content || "",
-        sql: result.sql,
-        chart_type: result.chart_type,
-      }),
-    });
-    alert("Отчёт сохранён!");
-  };
-
   return (
     <div className="app">
-      <div className="header">
-        <div className="logo">driv<span>ee</span> · аналитика без SQL</div>
-        <div className={`status ${health?.ollama ? "ok" : "err"}`}>
-          {health === null ? "..." :
-           health.ollama && health.db ? "● всё подключено" :
-           `● ${!health.ollama ? "Ollama недоступна" : "БД недоступна"}`}
-        </div>
-      </div>
-
+      <div className="header">Driv<span>ee</span> Analytics</div>
+      
       <div className="chat">
-        {messages.length === 0 && (
-          <div className="message bot">
-            <div style={{padding: "8px 4px"}}>
-              Привет! Задайте вопрос о данных Drivee на обычном русском —
-              я сама построю SQL и покажу ответ. Начните с любого шаблона ниже
-              или напишите свой запрос.
-            </div>
-          </div>
-        )}
+        {messages.length === 0 && <div className="msg bot">Привет! Спроси меня о данных. Например: выручка по городам за последние 7 дней.</div>}
         {messages.map((m, i) => (
-          m.role === "user" ?
-            <div key={i} className="message user">{m.content}</div> :
-            <ResultCard key={i} result={m.content}
-                        onFollowup={submit}
-                        onSaveReport={handleSaveReport} />
-        ))}
-        {loading && (
-          <div className="message bot">
-            <div style={{padding: "8px 4px", display: "flex", alignItems: "center", gap: 10}}>
-              <span className="spinner" /> Генерирую SQL и считаю данные...
-            </div>
+          <div key={i} className={`msg ${m.role}`}>
+            {m.role === 'user' ? m.content : (
+              m.data.error ? <span style={{color:'red'}}>Ошибка: {m.data.message} <br/><br/> {m.data.sql}</span> :
+              <div>
+                <div className="explanation"><b>Понял так:</b> {m.data.explanation}</div>
+                <ChartOrKPI chartType={m.data.chart_type} columns={m.data.data.columns} rows={m.data.data.rows} />
+                <details><summary style={{cursor:'pointer', marginTop:10, color:'#6b7280'}}>Показать SQL</summary>
+                  <div className="sql-code">{m.data.sql}</div>
+                </details>
+              </div>
+            )}
           </div>
-        )}
+        ))}
+        {loading && <div className="msg bot">Анализирую миллион строк... ⏳</div>}
       </div>
 
       <div className="input-wrap">
-        <div className="ghost-layer">
-          <span className="typed">{input}</span>
-          <span className="suggestion">{ghost ? (input.endsWith(" ") ? "" : " ") + ghost : ""}</span>
-        </div>
-        <textarea
-          className="input-box" rows="2" value={input}
+        <div className="ghost"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
+        <textarea className="input-box" rows="1" value={input} 
           onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Например: покажи отмены по городам за прошлую неделю"
-        />
-        <button className="submit-btn" disabled={loading || !input.trim()} onClick={() => submit(input)}>
-          {loading ? "..." : "Спросить"}
-        </button>
-      </div>
-      <div className="hint">
-        <b>Tab</b> — принять подсказку · <b>Enter</b> — отправить · <b>Esc</b> — убрать подсказку
+          onKeyDown={e => {
+            if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
+            if (e.key === 'Enter') { e.preventDefault(); ask(input); }
+          }} 
+          placeholder="Сколько отмен было вчера?" />
+        <button className="btn" disabled={loading} onClick={() => ask(input)}>Отправить</button>
       </div>
 
       <div className="chips">
-        {chips.map((c, i) => (
-          <span key={i} className="chip template" onClick={() => submit(c)}>{c}</span>
-        ))}
+        <div className="chip" onClick={()=>ask("Покажи уникальные заказы за все время")}>Уникальные заказы</div>
+        <div className="chip" onClick={()=>ask("Выручка по городам (city_id)")}>Выручка по городам</div>
+        <div className="chip" onClick={()=>ask("Доля отмен по городам")}>Доля отмен по городам</div>
       </div>
     </div>
   );
