@@ -1,183 +1,64 @@
-# ============================================================
-# Семантический слой Drivee (MVP-версия)
-# ============================================================
-
 meta:
   domain: ride_hailing
   language: ru
-  currency: RUB
 
-# --- Таблицы (упрощённая ожидаемая схема) ---
 tables:
   orders:
-    description: "Заказы поездок"
-    columns:
-      order_id: uuid
-      created_at: timestamp
-      status: "created | accepted | completed | cancelled_by_client | cancelled_by_driver | no_cars"
-      city_id: int
-      driver_id: "uuid nullable"
-      client_id: uuid
-      car_class: "economy | comfort | business | minivan"
-      payment_method: "card | cash | corporate | wallet"
-      price_rub: decimal
-      rating: "int 1-5 nullable"
-      pickup_wait_sec: int
-      surge_multiplier: decimal
-  cities:
+    description: "Логи тендеров (предложений поездок). Один заказ (order_id) может состоять из нескольких тендеров (строк)."
     columns:
       city_id: int
-      name: varchar
-  drivers:
-    columns:
-      driver_id: uuid
-      registered_at: timestamp
-      city_id: int
-      avg_rating: decimal
-      total_rides: int
-  clients:
-    columns:
-      client_id: uuid
-      registered_at: timestamp
-      is_corporate: boolean
+      order_id: varchar
+      tender_id: varchar
+      user_id: varchar
+      driver_id: varchar
+      status_order: "done | cancel"
+      status_tender: "done | decline | cancel"
+      order_timestamp: timestamp
+      distance_in_meters: decimal
+      duration_in_seconds: decimal
+      price_order_local: decimal
 
-# --- Метрики ---
 metrics:
   orders_total:
     canonical: "заказы"
-    synonyms: ["поездки", "количество заказов", "orders"]
-    sql: "COUNT(*)"
+    synonyms: ["всего заказов", "попытки уехать", "уникальные заказы"]
+    sql: "COUNT(DISTINCT order_id)"
 
   completed_rides:
     canonical: "завершённые поездки"
-    synonyms: ["успешные поездки", "выполненные заказы"]
-    sql: "COUNT(*) FILTER (WHERE status = 'completed')"
+    synonyms: ["успешные заказы", "выполненные"]
+    sql: "COUNT(DISTINCT CASE WHEN status_order = 'done' THEN order_id END)"
 
   cancellations:
     canonical: "отмены"
-    synonyms: ["отказы", "отменённые заказы", "сорванные"]
-    sql: "COUNT(*) FILTER (WHERE status IN ('cancelled_by_client','cancelled_by_driver'))"
+    synonyms: ["отменённые заказы"]
+    sql: "COUNT(DISTINCT CASE WHEN status_order = 'cancel' THEN order_id END)"
 
   revenue:
     canonical: "выручка"
-    synonyms: ["доход", "оборот", "gmv"]
-    sql: "SUM(price_rub) FILTER (WHERE status = 'completed')"
+    synonyms:["доход", "сумма", "оборот"]
+    # КРИТИЧНО: суммируем только успешные тендеры!
+    sql: "SUM(CASE WHEN status_tender = 'done' THEN price_order_local ELSE 0 END)"
 
-  avg_check:
-    canonical: "средний чек"
-    synonyms: ["средняя стоимость поездки", "средняя цена"]
-    sql: "AVG(price_rub) FILTER (WHERE status = 'completed')"
+  avg_distance:
+    canonical: "средняя дистанция"
+    sql: "AVG(CASE WHEN status_tender = 'done' THEN distance_in_meters END)"
 
-  cancellation_rate:
-    canonical: "доля отмен"
-    synonyms: ["процент отмен", "cancellation rate"]
-    sql: |
-      COUNT(*) FILTER (WHERE status IN ('cancelled_by_client','cancelled_by_driver'))::float
-      / NULLIF(COUNT(*), 0) * 100
+  avg_duration_min:
+    canonical: "средняя длительность (мин)"
+    sql: "AVG(CASE WHEN status_tender = 'done' THEN duration_in_seconds END) / 60.0"
 
-  avg_rating:
-    canonical: "средняя оценка"
-    synonyms: ["рейтинг", "качество"]
-    sql: "AVG(rating)"
-
-  avg_wait_time:
-    canonical: "среднее время подачи"
-    synonyms: ["время ожидания", "сколько ждать"]
-    sql: "AVG(pickup_wait_sec) / 60.0"
-
-  active_drivers:
-    canonical: "активные водители"
-    synonyms: ["работающие водители"]
-    sql: "COUNT(DISTINCT driver_id)"
-
-  active_clients:
-    canonical: "активные клиенты"
-    synonyms: ["уникальные пассажиры", "MAU"]
-    sql: "COUNT(DISTINCT client_id)"
-
-# --- Измерения ---
 dimensions:
   city:
     canonical: "город"
-    synonyms: ["по городам", "регион"]
-    column: "cities.name"
-    join: "orders.city_id = cities.city_id"
-  car_class:
-    canonical: "класс машины"
-    synonyms: ["тариф", "категория"]
-    column: "orders.car_class"
-  payment_method:
-    canonical: "способ оплаты"
-    synonyms: ["оплата"]
-    column: "orders.payment_method"
+    column: "city_id"
   date:
     canonical: "дата"
-    synonyms: ["по дням", "динамика"]
-    column: "DATE(orders.created_at)"
+    column: "DATE(order_timestamp)"
   hour:
     canonical: "час"
-    synonyms: ["по часам", "время суток"]
-    column: "EXTRACT(HOUR FROM orders.created_at)::int"
-  day_of_week:
-    canonical: "день недели"
-    synonyms: ["по дням недели"]
-    column: "TO_CHAR(orders.created_at, 'Day')"
+    column: "CAST(strftime('%H', order_timestamp) AS INTEGER)"
 
-# --- Периоды ---
-periods:
-  today:
-    canonical: "сегодня"
-    sql: "created_at >= CURRENT_DATE"
-  yesterday:
-    canonical: "вчера"
-    sql: "created_at >= CURRENT_DATE - INTERVAL '1 day' AND created_at < CURRENT_DATE"
-  last_7_days:
-    canonical: "за последние 7 дней"
-    synonyms: ["за неделю", "последняя неделя"]
-    sql: "created_at >= CURRENT_DATE - INTERVAL '7 days'"
-  last_week:
-    canonical: "за прошлую неделю"
-    synonyms: ["прошлая неделя"]
-    sql: |
-      created_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '1 week'
-      AND created_at < DATE_TRUNC('week', CURRENT_DATE)
-  last_30_days:
-    canonical: "за последние 30 дней"
-    synonyms: ["за месяц", "последний месяц"]
-    sql: "created_at >= CURRENT_DATE - INTERVAL '30 days'"
-  this_month:
-    canonical: "в этом месяце"
-    sql: "created_at >= DATE_TRUNC('month', CURRENT_DATE)"
-  last_month:
-    canonical: "за прошлый месяц"
-    sql: |
-      created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
-      AND created_at < DATE_TRUNC('month', CURRENT_DATE)
-
-# --- Сущности ---
-entities:
-  cities:
-    "Москва": ["москва", "мск", "msk"]
-    "Санкт-Петербург": ["спб", "питер", "санкт-петербург"]
-    "Новосибирск": ["нск", "новосиб"]
-    "Екатеринбург": ["екб", "ёбург"]
-    "Казань": ["казань", "кзн"]
-    "Краснодар": ["краснодар", "кдр"]
-
-# --- Типовые шаблоны (для few-shot и chips) ---
-templates:
-  - "покажи отмены по городам за прошлую неделю"
-  - "динамика выручки за последний месяц"
-  - "средний чек по классам машин"
-  - "топ 10 водителей по поездкам"
-  - "доля отмен по часам"
-  - "активные клиенты за вчера"
-  - "сравни выручку этого месяца с прошлым"
-
-# --- Правила безопасности ---
 rules:
   default_limit: 1000
-  statement_timeout_sec: 10
-  forbidden: [INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, GRANT]
-  allowed_tables: [orders, drivers, clients, cities]
-  pii_columns: [clients.phone, clients.email, drivers.passport, drivers.phone]
+  allowed_tables: [orders]
