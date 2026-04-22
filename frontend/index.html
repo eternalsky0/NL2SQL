@@ -108,26 +108,46 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   const fetchGhost = async (text) => {
-    if (text.length < 3) return setGhost("");
+    if (text.length < 3) {
+      setGhost("");
+      return;
+    }
     try {
       const res = await fetch(`${API}/suggest/ghost`, {
-        method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({prefix: text})
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prefix: text })
       });
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let streamTxt = "";
+
       while (true) {
-        const {value, done} = await reader.read();
+        const { value, done } = await reader.read();
         if (done) break;
+
         const chunk = decoder.decode(value);
-        const match = chunk.match(/"text":\s*"([^"]+)"/);
-        if (match) {
-          streamTxt += match[1];
-          setGhost(streamTxt);
+        // SSE формат присылает строки вида "data: {...}\n\n"
+        const lines = chunk.split("\n");
+        
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const jsonStr = line.replace("data: ", "").trim();
+            if (jsonStr === "[DONE]") break;
+            try {
+              const data = JSON.parse(jsonStr);
+              streamTxt += data.text;
+              setGhost(streamTxt);
+            } catch (e) {
+              // Игнорируем неполные JSON чанки
+            }
+          }
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error("Ghost error:", err);
+    }
   };
 
   useEffect(() => {
