@@ -52,55 +52,67 @@
 const { useState, useRef, useEffect } = React;
 const API = "http://localhost:8000";
 
-function ChartOrKPI({ chartType, columns, rows }) {
+function ChartOrKPI({ chartType, columns, rows, comparison }) {
   const canvasRef = useRef(null);
 
-  // === НОВАЯ ЛОГИКА ИЗ ВТОРОГО РЕШЕНИЯ: KPI-карточка ===
   if (columns.length === 1 && rows.length === 1) {
-    const val = rows[0][0];
-    const formatted = typeof val === 'number' ? new Intl.NumberFormat('ru-RU').format(Math.round(val)) : val;
     return (
       <div className="kpi-card">
-        <div className="kpi-title">{columns[0].replace(/_/g, ' ')}</div>
-        <div className="kpi-value">{formatted}</div>
+        <div className="kpi-title">{columns[0]}</div>
+        <div className="kpi-value">{rows[0][0]}</div>
       </div>
     );
   }
 
-  // Таблица, если данных много или явно просят
-  if (chartType === "table" || rows.length === 0 || rows.length > 50) {
+  const isTimeSeries = columns[0].toLowerCase().includes("date");
+
+  const resolvedType = chartType === "table"
+    ? "table"
+    : isTimeSeries ? "line" : "bar";
+
+  if (resolvedType === "table" || rows.length > 50) {
     return (
       <table>
         <thead><tr>{columns.map(c => <th key={c}>{c}</th>)}</tr></thead>
         <tbody>
-          {rows.slice(0, 15).map((r, i) => (
-            <tr key={i}>{r.map((v, j) => <td key={j}>{v}</td>)}</tr>
+          {rows.slice(0, 20).map((r, i) => (
+            <tr key={i}>
+              {r.map((v, j) => <td key={j}>{v}</td>)}
+            </tr>
           ))}
         </tbody>
       </table>
     );
   }
 
-  // Отрисовка графиков
   useEffect(() => {
     if (!canvasRef.current) return;
+
     const chart = new Chart(canvasRef.current, {
-      type: chartType === "pie" ? "pie" : "bar",
+      type: resolvedType,
       data: {
         labels: rows.map(r => r[0]),
-        datasets:[{
-          label: columns[1] || 'Значение',
-          data: rows.map(r => Number(r[1]) || 0),
-          backgroundColor: '#A3E635'
-        }]
+        datasets: [
+          {
+            label: columns[1],
+            data: rows.map(r => Number(r[1]) || 0),
+            backgroundColor: '#A3E635'
+          },
+          comparison && columns.includes("delta") && {
+            label: "Δ",
+            data: rows.map(r => Number(r[columns.indexOf("delta")]) || 0),
+            backgroundColor: '#f59e0b'
+          }
+        ].filter(Boolean)
       }
     });
+
     return () => chart.destroy();
-  }, [chartType, columns, rows]);
+  }, [rows, columns, comparison]);
 
-  return <div style={{height: 300, marginTop: 16}}><canvas ref={canvasRef}/></div>;
+  return <canvas ref={canvasRef} style={{marginTop: 20}} />;
 }
-
+  
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -184,7 +196,7 @@ function App() {
               m.data.error ? <span style={{color:'red'}}>Ошибка: {m.data.message} <br/><br/> {m.data.sql}</span> :
               <div>
                 <div className="explanation"><b>Понял так:</b> {m.data.explanation}</div>
-                <ChartOrKPI chartType={m.data.chart_type} columns={m.data.data.columns} rows={m.data.data.rows} />
+                <ChartOrKPI chartType={m.data.chart_type} columns={m.data.data.columns} rows={m.data.data.rows} comparison={m.data.comparison}/>
                 <details><summary style={{cursor:'pointer', marginTop:10, color:'#6b7280'}}>Показать SQL</summary>
                   <div className="sql-code">{m.data.sql}</div>
                 </details>
