@@ -39,7 +39,7 @@ client = AsyncOpenAI(
     }
 )
 '''
-with open(BASE_DIR / "semantic_layer.yaml", "r", encoding="utf-8") as f:
+with open('/Users/alinakobenko/Desktop/МПИТ/NL2SQL-main/backend/semantic_layer.yaml', "r", encoding="utf-8") as f:
     SEMANTIC = yaml.safe_load(f)
 
 def get_semantic_prompt():
