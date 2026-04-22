@@ -37,7 +37,7 @@ drivee-nl2sql/
 
 ```powershell
 ollama pull qwen2.5-coder:1.5b
-ollama pull qwen2.5-coder:3b
+ollama pull qwen2.5-coder:7b
 ```
 
 Первая (1.5B, ~900 МБ) — для ghost-text и chips.  
