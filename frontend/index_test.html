@@ -2,110 +2,226 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Drivee Analytics</title>
+  <title>Drivee · Самообслуживаемая аналитика</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    body { font-family: sans-serif; background: #f3f4f6; padding: 20px; }
-    .app { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-    .tabs { display: flex; gap: 20px; border-bottom: 2px solid #eee; margin-bottom: 20px; }
-    .tab { padding: 10px; cursor: pointer; color: #666; }
-    .tab.active { color: #A3E635; border-bottom: 2px solid #A3E635; font-weight: bold; }
-    .msg { padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #f9fafb; border: 1px solid #eee; }
-    .kpi { background: #f0fdf4; padding: 20px; border-radius: 10px; text-align: center; }
-    .kpi h2 { font-size: 35px; color: #16a34a; margin: 5px 0; }
-    .input-wrap { position: relative; margin-top: 20px; }
-    input { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #ddd; outline: none; }
-    .btn-save { background: #A3E635; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-    .report-item { border: 1px solid #eee; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; }
-    .badge { background: #dcf4e3; color: #166534; padding: 3px 8px; font-size: 10px; border-radius: 5px; }
+    :root { --drivee-lime: #A3E635; --drivee-dark: #111827; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: var(--drivee-dark); }
+    
+    /* Основной контейнер с боковой панелью для Сценария 4 */
+    .layout { display: flex; max-width: 1200px; margin: 0 auto; height: 100vh; overflow: hidden; }
+    
+    .sidebar { width: 300px; background: white; border-right: 1px solid #e5e7eb; padding: 20px; overflow-y: auto; }
+    .main-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+    
+    .app-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex: 1; display: flex; flex-direction: column; }
+    .header { font-size: 22px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; }
+    
+    .chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; padding-right: 8px; }
+    .msg { padding: 16px; border-radius: 12px; line-height: 1.5; font-size: 14px; position: relative; }
+    .msg.user { background: #f3f4f6; align-self: flex-end; max-width: 80%; }
+    .msg.bot { background: white; border: 1px solid #e5e7eb; width: 100%; }
+
+    /* Компонент Сравнения (Сценарий 2) */
+    .comparison-badge { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 6px; font-weight: bold; margin-left: 10px; }
+    .up { background: #dcfce7; color: #166534; }
+    .down { background: #fee2e2; color: #991b1b; }
+
+    /* Стили ввода */
+    .input-wrap { position: relative; }
+    .input-box { width: 100%; height: 56px; padding: 16px 120px 16px 16px; border-radius: 12px; border: 2px solid #e5e7eb; font-size: 15px; outline: none; }
+    .input-box:focus { border-color: var(--drivee-lime); }
+    .ghost { position: absolute; top: 18px; left: 18px; color: #9ca3af; pointer-events: none; }
+    .btn-send { position: absolute; right: 8px; top: 8px; height: 40px; background: var(--drivee-lime); border: none; border-radius: 8px; padding: 0 16px; font-weight: bold; cursor: pointer; }
+
+    /* Кнопки действий в сообщении */
+    .actions { margin-top: 12px; display: flex; gap: 8px; }
+    .btn-action { font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid #e5e7eb; background: white; cursor: pointer; }
+    .btn-action:hover { background: #f9fafb; }
+
+    .kpi-card { background: #f7fee7; border: 1px solid #d9f99d; padding: 20px; border-radius: 12px; text-align: center; margin: 10px 0; }
+    .catalog-item { padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6; margin-bottom: 8px; cursor: pointer; font-size: 13px; }
+    .catalog-item:hover { background: #f7fee7; }
+    .badge-approved { background: var(--drivee-lime); font-size: 10px; padding: 2px 4px; border-radius: 4px; margin-left: 5px; }
   </style>
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect, useRef } = React;
 
-function Visual({ data, type }) {
-  const canvas = useRef(null);
-  if (data.rows.length === 1 && data.columns.length === 1) {
-    return <div className="kpi"><div>{data.columns[0]}</div><h2>{Math.round(data.rows[0][0]).toLocaleString()}</h2></div>;
-  }
-  useEffect(() => {
-    if (!canvas.current) return;
-    const ctx = canvas.current.getContext('2d');
-    const chart = new Chart(ctx, {
-      type: type === 'pie' ? 'pie' : 'bar',
-      data: { labels: data.rows.map(r => r[0]), datasets: [{ label: data.columns[1], data: data.rows.map(r => r[1]), backgroundColor: '#A3E635' }] }
-    });
-    return () => chart.destroy();
-  }, [data]);
-  return <canvas ref={canvas}></canvas>;
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+const API = "http://localhost:8000";
+
+// Вспомогательный компонент для сравнения чисел (Сценарий 2)
+function Delta({ current, previous }) {
+  if (!previous || previous === 0) return null;
+  const diff = ((current - previous) / previous) * 100;
+  const isUp = diff >= 0;
+  return (
+    <span className={`comparison-badge ${isUp ? 'up' : 'down'}`}>
+      {isUp ? '↑' : '↓'} {Math.abs(diff).toFixed(1)}%
+    </span>
+  );
 }
 
-function App() {
-  const [tab, setTab] = useState('chat');
-  const [msgs, setMsgs] = useState([]);
-  const [input, setInput] = useState("");
-  const [reps, setReps] = useState([]);
+function ChartOrResult({ m, onAction }) {
+  const canvasRef = useRef(null);
+  const { data, chart_type, explanation } = m.data;
+  const rows = data.rows;
+  const cols = data.columns;
 
-  const ask = async (q) => {
-    setMsgs([...msgs, { role: 'user', text: q }]);
-    const res = await fetch('http://localhost:8000/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
-    const data = await res.json();
-    setMsgs(prev => [...prev, { role: 'bot', data }]);
-  };
+  // Логика Сценария 2: Если в данных 2 строки (например, текущая и прошлая неделя)
+  const isComparison = rows.length === 2 && typeof rows[0][1] === 'number';
 
-  const save = async (m, sched = null) => {
-    const name = prompt("Название отчета:");
-    if (!name) return;
-    await fetch('http://localhost:8000/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, question: m.data.question, sql: m.data.sql, chart_type: m.data.chart_type, schedule: sched }) });
-    alert("Сохранено!");
-  };
-
-  useEffect(() => { if (tab === 'cat') fetch('http://localhost:8000/reports').then(r => r.json()).then(setReps); }, [tab]);
+  useEffect(() => {
+    if (!canvasRef.current || isComparison || rows.length > 50 || rows.length === 0) return;
+    const ctx = canvasRef.current.getContext('2d');
+    const chart = new Chart(ctx, {
+      type: chart_type === 'pie' ? 'pie' : 'bar',
+      data: {
+        labels: rows.map(r => r[0]),
+        datasets: [{ data: rows.map(r => r[1]), backgroundColor: '#A3E635' }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+    return () => chart.destroy();
+  }, [m]);
 
   return (
-    <div className="app">
-      <h2>Drivee Analytics 🚕</h2>
-      <div className="tabs">
-        <div className={`tab ${tab === 'chat' ? 'active' : ''}`} onClick={() => setTab('chat')}>Чат</div>
-        <div className={`tab ${tab === 'cat' ? 'active' : ''}`} onClick={() => setTab('cat')}>Каталог</div>
+    <div>
+      <div className="explanation">
+        <b>💡 Анализ:</b> {explanation}
+        {isComparison && <Delta current={rows[0][1]} previous={rows[1][1]} />}
       </div>
 
-      {tab === 'chat' ? (
-        <div>
-          {msgs.map((m, i) => (
-            <div key={i} className="msg">
-              {m.role === 'user' ? <b>Вы: {m.text}</b> : 
-                <div>
-                  <p>🤖 {m.data.explanation}</p>
-                  <Visual data={m.data.data} type={m.data.chart_type} />
-                  <button className="btn-save" onClick={() => save(m)}>💾 Сохранить</button>
-                  <button className="btn-save" style={{marginLeft:10, background:'#eee'}} onClick={() => save(m, "Пн, 09:00")}>⏰ В рассылку</button>
-                </div>
-              }
-            </div>
-          ))}
-          <div className="input-wrap">
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (ask(input), setInput(""))} placeholder="Спроси что-нибудь..." />
-          </div>
+      {isComparison ? (
+        <div className="kpi-card">
+          <div style={{fontSize: 12, color: '#666'}}>{rows[0][0]} (Текущий период)</div>
+          <div style={{fontSize: 32, fontWeight: 'bold'}}>{rows[0][1].toLocaleString()}</div>
+          <div style={{fontSize: 12, color: '#991b1b', marginTop: 8}}>Прошлый период: {rows[1][1].toLocaleString()}</div>
         </div>
+      ) : rows.length <= 50 && rows.length > 0 ? (
+        <div style={{height: 250}}><canvas ref={canvasRef} /></div>
       ) : (
-        <div>
-          {reps.map(r => (
-            <div className="report-item" key={r.id}>
-              <div><b>{r.name}</b> {r.is_approved ? <span className="badge">APPROVED</span> : ""} <br/> <small>{r.question}</small> </div>
-              <button onClick={() => {setTab('chat'); ask(r.question)}}>Открыть</button>
-            </div>
-          ))}
+        <div style={{overflowX: 'auto'}}>
+          <table>
+            <thead><tr>{cols.map(c => <th key={c}>{c}</th>)}</tr></thead>
+            <tbody>{rows.slice(0, 5).map((r, i) => <tr key={i}>{r.map((v, j) => <td key={j}>{v}</td>)}</tr>)}</tbody>
+          </table>
         </div>
       )}
+
+      <div className="actions">
+        <button className="btn-action" onClick={() => onAction('save', m)}>💾 Сохранить отчет</button>
+        <button className="btn-action" onClick={() => onAction('schedule', m)}>📅 В расписание (Пн 9:00)</button>
+      </div>
     </div>
   );
 }
+
+function App() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [ghost, setGhost] = useState("");
+  const [catalog, setCatalog] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Загрузка каталога (Сценарий 4)
+  const loadCatalog = () => {
+    fetch(`${API}/reports/catalog`).then(r => r.json()).then(setCatalog);
+  };
+
+  useEffect(() => { loadCatalog(); }, []);
+
+  const handleAction = (type, m) => {
+    const payload = {
+      name: prompt("Введите название отчета", m.data.question),
+      question: m.data.question,
+      sql: m.data.sql,
+      chart_type: m.data.chart_type,
+      schedule: type === 'schedule' ? 'Monday 09:00' : null,
+      is_approved: 0
+    };
+    if (payload.name) {
+      fetch(`${API}/reports/save`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      }).then(() => { alert("Готово!"); loadCatalog(); });
+    }
+  };
+
+  const ask = async (q) => {
+    if (!q) return;
+    setMessages(prev => [...prev, { role: 'user', content: q }]);
+    setInput(""); setGhost(""); setLoading(true);
+    try {
+      const res = await fetch(`${API}/query`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ question: q })
+      });
+      const data = await res.json();
+      setMessages(prev => [...prev, { role: 'bot', data }]);
+    } catch (e) { alert("Ошибка связи с сервером"); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="layout">
+      {/* Боковая панель - Сценарий 4 (Совместная работа) */}
+      <div className="sidebar">
+        <h3 style={{fontSize: 16, marginBottom: 16}}>📚 Каталог отчетов</h3>
+        {catalog.map(item => (
+          <div key={item.id} className="catalog-item" onClick={() => ask(item.question)}>
+            <b>{item.name}</b>
+            {item.is_approved === 1 && <span className="badge-approved">APPROVED</span>}
+            <div style={{fontSize: 10, color: '#999', marginTop: 4}}>{item.schedule ? '📅 ' + item.schedule : '📊 Разовый'}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="main-content">
+        <div className="app-card">
+          <div className="header">
+            <div>Drivee <span>AI Analytics</span></div>
+            <div style={{fontSize: 12, color: '#999'}}>Online</div>
+          </div>
+
+          <div className="chat">
+            {messages.length === 0 && (
+              <div className="msg bot">
+                <b>👋 Привет! Я твой AI-аналитик Drivee.</b><br/>
+                Я могу быстро ответить на вопросы по базе, сравнить периоды или настроить регулярную отчетность.
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`msg ${m.role}`}>
+                {m.role === 'user' ? m.content : <ChartOrResult m={m} onAction={handleAction} />}
+              </div>
+            ))}
+            {loading && <div className="msg bot">Думаю... 🚕</div>}
+          </div>
+
+          <div className="input-wrap">
+            <div className="ghost"><span>{input}</span>{ghost}</div>
+            <input 
+              className="input-box" 
+              value={input}
+              onChange={e => { setInput(e.target.value); /* здесь логика ghost через fetch */ }}
+              onKeyDown={e => e.key === 'Enter' && ask(input)}
+              placeholder="Напр: Сравни выручку этой недели и прошлой"
+            />
+            <button className="btn-send" onClick={() => ask(input)}>Спросить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>
