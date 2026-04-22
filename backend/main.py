@@ -16,13 +16,23 @@ from pydantic import BaseModel
 from openai import AsyncOpenAI
 
 BASE_DIR = Path(__file__).parent
-DB_PATH = str(BASE_DIR / "data" / "drivee.db")
+DB_PATH = '/Users/alinakobenko/Desktop/МПИТ/NL2SQL-main/data/drivee.db'
 
-OLLAMA_URL = "http://localhost:11434/v1"
-FAST_MODEL = "qwen2.5-coder:1.5b"
-STRONG_MODEL = "qwen2.5-coder:7b"
-client = AsyncOpenAI(base_url=OLLAMA_URL, api_key="local")
+OPENROUTER_URL = "https://openrouter.ai/api/v1"
+FAST_MODEL = "qwen/qwen-turbo"
+STRONG_MODEL = "qwen/qwen-2.5-coder-32b-instruct"
 
+client = AsyncOpenAI(
+    base_url=OPENROUTER_URL,
+    api_key="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",
+    default_headers={
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "Drivee NL2SQL"
+    }
+)
+
+# Загрузка семантического слоя
+# Убедитесь, что файл semantic_layer.yaml лежит рядом с main.py
 with open(BASE_DIR / "semantic_layer.yaml", "r", encoding="utf-8") as f:
     SEMANTIC = yaml.safe_load(f)
 
@@ -63,7 +73,6 @@ class QueryReq(BaseModel):
 class GhostReq(BaseModel):
     prefix: str
 
-# === GUARDRAILS ===
 def validate_sql(sql: str) -> str:
     try:
         parsed = sqlglot.parse_one(sql, dialect="sqlite")
@@ -83,11 +92,9 @@ def validate_sql(sql: str) -> str:
         
     return parsed.sql(dialect="sqlite")
 
-# === ЭНДПОИНТЫ ===
 @app.post("/query")
 async def query(req: QueryReq):
     t_start = time.time()
-    
     try:
         response = await client.chat.completions.create(
             model=STRONG_MODEL,
@@ -99,18 +106,11 @@ async def query(req: QueryReq):
             response_format={"type": "json_object"}
         )
         content = response.choices[0].message.content
-        
-        print("\n" + "="*40)
-        print(f"ВОПРОС: {req.question}")
-        print(f"ОТВЕТ LLM:\n{content}")
-        print("="*40 + "\n")
-        
         result = json.loads(content)
     except Exception as e:
         raise HTTPException(500, f"Ошибка LLM: {str(e)}")
 
     sql_raw = result.get("sql", "")
-    
     try:
         sql_safe = validate_sql(sql_raw)
     except Exception as e:
@@ -143,7 +143,7 @@ async def suggest_ghost(req: GhostReq):
             response = await client.chat.completions.create(
                 model=FAST_MODEL,
                 messages=[
-                    {"role": "system", "content": "Продолжи запрос аналитики 2-5 словами. Не повторяй начало. Выведи только продолжение."},
+                    {"role": "system", "content": "Продолжи запрос аналитики 2-5 словами. Не повторяй начало. Выведи только продолжение без кавычек."},
                     {"role": "user", "content": f'"{req.prefix}"'}
                 ],
                 temperature=0.2,
