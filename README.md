@@ -1,157 +1,172 @@
-# Drivee NL2SQL — MVP для конкурса «Моя профессия – ИТ»
+# Drivee NL2SQL
 
-Естественно-языковой интерфейс к аналитической БД. Пользователь пишет
-«покажи отмены по городам за прошлую неделю» — система генерирует SQL,
-выполняет его и рисует график. Три уровня подсказок на базе LLM
-(ghost-text, chips, финальная генерация SQL), жёсткие guardrails через
-sqlglot, семантический слой для точности.
+Естественно-языковой интерфейс к аналитической базе данных такси-сервиса. Пользователь пишет вопрос на русском («покажи отмены по городам за прошлую неделю»), система генерирует SQL, выполняет его и строит график.
 
-## Структура
+**Стек:** FastAPI · SQLite · OpenRouter / Ollama / Groq · Chart.js · React (без сборки)
 
-```
-drivee-nl2sql/
-├── backend/
-│   ├── main.py               # FastAPI: все эндпоинты + пайплайн
-│   ├── semantic_layer.yaml   # Бизнес-словарь: метрики, измерения, периоды
-│   ├── seed_db.py            # Генератор тестовой БД (42 000 заказов)
-│   └── requirements.txt
-├── frontend/
-│   └── index.html            # React + Chart.js одним файлом (без npm)
-├── data/
-│   ├── drivee.db             # SQLite с тестовыми данными
-│   └── reports.db            # Сохранённые отчёты
-├── setup.bat                 # Первый запуск (зависимости + БД)
-└── run_server.bat            # Запуск сервера
-```
+---
 
-## Быстрый старт на Windows
+## Требования
 
-### 1. Установить Ollama
+- Python 3.10+
+- LLM-провайдер: [OpenRouter](https://openrouter.ai) (рекомендуется), Groq или Ollama (локально)
 
-Скачайте `OllamaSetup.exe` с https://ollama.com/download/windows и
-запустите. После установки Ollama работает как фоновый сервис.
+---
 
-### 2. Скачать модели
+## Установка
 
-Откройте PowerShell и выполните:
+```bash
+# 1. Клонировать репозиторий
+git clone <repo-url>
+cd NL2SQL
 
-```powershell
-ollama pull qwen2.5-coder:1.5b
-ollama pull qwen2.5-coder:7b
+# 2. Создать виртуальное окружение
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# macOS / Linux
+source venv/bin/activate
+
+# 3. Установить зависимости
+pip install -r backend/requirements.txt
 ```
 
-Первая (1.5B, ~900 МБ) — для ghost-text и chips.  
-Вторая (7B, ~4.5 ГБ) — для финальной генерации SQL.
+---
 
-Если 7B слишком тяжёлая для вашего железа, используйте `qwen2.5-coder:3b`
-и поправьте `STRONG_MODEL` в `backend/main.py`.
+## Конфигурация
 
-### 3. Настройка в PyCharm
+Создайте файл `backend/.env` (в тг)
 
-1. Откройте папку проекта в PyCharm (File → Open → папка `drivee-nl2sql`).
-2. PyCharm предложит создать venv — согласитесь.
-3. Откройте Terminal внутри PyCharm: `pip install -r backend/requirements.txt`
-4. Запустите `python backend/seed_db.py` один раз — создастся тестовая БД.
-5. Создайте Run Configuration:
-   - Type: **FastAPI**
-   - Application file: `backend/main.py`
-   - Host: `0.0.0.0`, Port: `8000`
-6. Запускайте зелёной кнопкой. Сервер поднимется на http://localhost:8000
+<summary>Ollama (локально, без интернета)</summary>
 
-Альтернативно — используйте `setup.bat` и `run_server.bat` из корня проекта
-(двойной клик).
+```bash
+# Установить Ollama: https://ollama.com/download
+ollama pull qwen2.5-coder:1.5b   # ~900 МБ, для ghost/chips
+ollama pull qwen2.5-coder:7b     # ~4.5 ГБ, для SQL
+```
 
-### 4. Открыть фронт
+```env
+OPENROUTER_URL=http://localhost:11434/v1
+OPENROUTER_KEY=ollama
+FAST_MODEL=qwen2.5-coder:1.5b
+STRONG_MODEL=qwen2.5-coder:7b
+```
+</details>
 
-Откройте `frontend/index.html` двойным кликом — он запустится в браузере
-и подключится к localhost:8000. Всё, можно начинать задавать вопросы.
+---
 
-## Проверка, что всё работает
+## Инициализация базы данных
 
-Откройте http://localhost:8000/health — должно быть:
+Взять с ТГ
+
+---
+
+## Запуск
+
+```bash
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Сервер доступен на http://localhost:8000
+
+**PyCharm:** main.py → Run
+
+---
+
+## Открыть интерфейс
+
+Откройте в браузере двойным кликом:
+
+| Файл | Назначение |
+|---|---|
+| `frontend/index.html` | Основной чат-интерфейс |
+| `frontend/reports.html` | Управление расписаниями отчётов |
+
+> CORS разрешён для всех origins — открывать можно прямо через `file://`.
+
+---
+
+## Проверка работоспособности
+
+```
+GET http://localhost:8000/health
+```
+
+Ожидаемый ответ:
 
 ```json
 {
   "ollama": true,
   "db": true,
-  "reports_db": true,
-  "ollama_models": ["qwen2.5-coder:1.5b", "qwen2.5-coder:7b"],
-  "fast_loaded": true
+  "reports_db": true
 }
 ```
 
-Откройте http://localhost:8000/docs — встроенный Swagger для всех API.
 
-## Демо-сценарий (для защиты)
 
-Порядок запросов, которые хорошо раскрывают все фичи:
+## Тесты
 
-1. **«покажи отмены по городам за прошлую неделю»** — базовый сценарий, bar chart.
-2. **«динамика выручки за последний месяц»** — line chart, видна сезонность.
-3. **«топ 10 водителей по поездкам за неделю»** — таблица, автовыбор работает.
-4. **«доля отмен по классам машин»** — pie chart, выражение метрики из семантики.
-5. **«а теперь только по Москве»** — follow-up с учётом истории.
-6. (опционально, для wow) **попробовать удалить заказ** — `DELETE FROM orders`
-   через поле запроса → система покажет guardrail в действии.
+```bash
+# Тесты безопасности (guardrails, SQL-инъекции, prompt injection)
+python backend/test/test_security.py --url http://localhost:8000
 
-## Настройка под другой LLM
-
-Все переменные окружения можно задать в `.env` или через PyCharm Run
-Configuration. Ключевые:
-
-```
-OLLAMA_URL=http://localhost:11434        # где крутится Ollama
-FAST_MODEL=qwen2.5-coder:1.5b            # для ghost/chips
-STRONG_MODEL=qwen2.5-coder:7b            # для финальной генерации
-STRONG_PROVIDER=ollama                   # ollama | openai | groq
+# Smoke-тесты планировщика отчётов (без LLM)
+python backend/test_reports_smoke.py
 ```
 
-### Переключение на Groq для уровня 3 (быстрее)
+---
 
-1. Получите ключ на https://console.groq.com
-2. В переменных окружения:
-   ```
-   STRONG_PROVIDER=openai
-   OPENAI_KEY=gsk_...
-   OPENAI_URL=https://api.groq.com/openai/v1/chat/completions
-   OPENAI_MODEL=llama-3.3-70b-versatile
-   ```
+## Демо-сценарий
 
-## Что реализовано по критериям оценки
+Рекомендуемый порядок для демонстрации:
 
-| Критерий | Что сделано |
-|---|---|
-| №1 Ценность (15) | Чат с инсайтами, follow-ups, UX «как с коллегой» |
-| №2 MVP (20) | Работающий прототип от ввода до графика |
-| №3 NL→SQL (20) | Семантический слой + RAG из few-shot + confidence |
-| №4 Корректность (15) | sqlglot-валидация AST, адаптация PG→SQLite |
-| №5 Безопасность (15) | SELECT-only, whitelist таблиц, read-only БД, PII-защита, timeout |
-| №6 UX (10) | Ghost text, chips, объяснения, confidence-индикатор |
-| №7 Демо (5) | Описано в этом README |
-| №8 Расписание (+5) | CRUD отчётов с полем schedule_cron |
-| №9 Семантика (+5) | YAML с метриками/измерениями/периодами/сущностями |
-| №10 Confidence (+5) | Модель сама оценивает + clarification_needed |
-| №11 Шаблоны (+5) | `templates:` в YAML, chips на главной |
+1. `покажи отмены по городам за прошлую неделю` — bar chart
+2. `динамика выручки за последний месяц` — line chart
+3. `топ 10 водителей по поездкам за неделю` — таблица
+4. `доля отмен по классам машин` — pie chart
+5. `а теперь только по Москве` — follow-up с памятью контекста
+6. _(wow-эффект)_ напишите `DELETE FROM orders` — сработает guardrail
 
-## Что можно добавить дальше
+---
 
-- **APScheduler** для реальных рассылок по расписанию (эндпоинт CRUD уже есть).
-- **Chroma** для RAG-поиска по сохранённым парам «вопрос → SQL» (обучение на правках).
-- **Лемматизация** через pymorphy3 для fuzzy-match сущностей (Москве → Москва).
-- **Agentic SQL-критик** (вторая LLM проверяет первую перед выполнением).
-- **Row-level security**: автоинъекция `WHERE city = user.region` в SQL.
+## Архитектура
+
+```
+frontend/index.html          ← React + Chart.js (один файл, без сборки)
+        │
+        │ HTTP / fetch
+        ▼
+backend/main.py              ← FastAPI: /query, /health, /reports/*
+        │
+        ├── semantic_layer.yaml   ← бизнес-словарь (метрики, синонимы)
+        ├── scheduler.py          ← APScheduler (расписания отчётов)
+        ├── reports_store.py      ← CRUD для отчётов (reports.db)
+        ├── notifications.py      ← email / in-app доставка
+        └── data/
+            ├── drivee.db         ← аналитические данные (read-only)
+            └── reports.db        ← сохранённые отчёты
+```
+
+**LLM-пайплайн (3 уровня):**
+
+| Уровень | Модель | Назначение |
+|---|---|---|
+| 1 | FAST_MODEL | Ghost-text (автодополнение при вводе) |
+| 2 | FAST_MODEL | Chips (4 подсказки-follow-up) |
+| 3 | STRONG_MODEL | Финальная генерация SQL |
+
+**Безопасность:** только `SELECT`, whitelist таблиц (`orders`), валидация AST через `sqlglot`, таймаут запросов.
+
+---
 
 ## Частые проблемы
 
-**«Connection refused» к Ollama** — проверьте что Ollama запущена:
-в трее должна быть иконка или `ollama ps` в PowerShell что-то показывает.
+**`Connection refused` к LLM** — проверьте правильность `OPENROUTER_URL` и `OPENROUTER_KEY` в `backend/.env`.
 
-**Модель работает на CPU** — `ollama ps` покажет. Если есть NVIDIA GPU,
-обновите драйверы до последних. Для AMD GPU на Windows Ollama пока не работает.
+**Ollama работает на CPU, а не GPU** — `ollama ps` покажет использование. Обновите драйверы NVIDIA.
 
-**CORS ошибка в браузере** — не должно быть, т.к. в main.py разрешены все
-origins. Если всё же возникла, проверьте что открываете `file://.../index.html`
-а не через какой-то dev-сервер на другом порту.
+**Кириллица в пути к проекту** (`C:\Users\Иван\...`) — перенесите проект в `C:\Dev\NL2SQL`.
 
-**Кириллица в путях** — если логин Windows на русском
-(`C:\Users\Иван\...`), переложите проект в `C:\Dev\drivee-nl2sql`.
+**`ModuleNotFoundError`** — убедитесь, что виртуальное окружение активировано перед `uvicorn`.
