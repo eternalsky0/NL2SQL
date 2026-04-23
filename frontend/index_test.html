@@ -52,14 +52,14 @@
 
     /* ПРАВАЯ ПАНЕЛЬ - 60% */
     .right-panel { width: 60%; padding: 24px; display: flex; flex-direction: column; background: #f3f4f6; overflow-y: auto; }
-    .result-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; flex-grow: 1; display: flex; flex-direction: column; min-height: 400px; }
+    .result-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; display: flex; flex-direction: column; height: fit-content; min-height: 300px; }
     .badge { background: var(--brand-green); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 
     .kpi-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; text-align: center; }
     .kpi-value { font-size: 72px; font-weight: 800; color: #4f46e5; margin: 10px 0; letter-spacing: -2px; }
     .kpi-label { font-size: 16px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
 
-    .data-grid { display: flex; flex-direction: column; gap: 24px; flex-grow: 1; margin-top: 20px; }
+    .data-grid { display: flex; flex-direction: column; gap: 24px; margin-top: 20px; }
     .chart-container { height: 250px; width: 100%; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
     th { background: #f9fafb; padding: 10px; font-weight: 600; border-bottom: 2px solid #e5e7eb; text-align: left; }
@@ -302,7 +302,7 @@ function App() {
                     ) : (
                       <div className="data-grid">
                         <ChartView columns={result.data.columns} rows={result.data.rows} />
-                        <div style={{overflowY: 'auto', flexGrow: 1}}>
+                        <div style={{width: '100%', overflowX: 'auto'}}>
                           <table>
                             <thead><tr>{result.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
                             <tbody>
