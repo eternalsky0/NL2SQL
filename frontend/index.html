@@ -260,14 +260,29 @@ function App() {
 
             <div className="right-panel">
               {loading ? (
-                 <div className="loader"><div className="spinner"></div>Считаем...</div>
+                 <div className="loader"><div className="spinner"></div></div>
+              ) : result && result.error ? (
+                /* ДОБАВЛЕН БЛОК ОШИБКИ */
+                <div style={{margin:'auto', color:'#ef4444', textAlign:'center', padding: '24px', background: '#fee2e2', borderRadius: '16px', border: '1px solid #f87171', width: '100%', maxWidth: '600px'}}>
+                  <svg style={{width: 50, height: 50, margin: '0 auto 10px'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <h3 style={{marginTop: 0, color: '#991b1b'}}>Ошибка выполнения запроса</h3>
+                  <p style={{color: '#7f1d1d'}}>{result.message}</p>
+                  {result.sql && (
+                      <div className="sql-code" style={{textAlign: 'left', marginTop: 15, background: '#7f1d1d'}}>
+                          {result.sql}
+                      </div>
+                  )}
+                </div>
               ) : result && !result.error ? (
+                /* СУЩЕСТВУЮЩИЙ БЛОК УСПЕШНОГО РЕЗУЛЬТАТА */
                 <>
                   <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 16}}>
                     <div style={{color: '#4b5563', fontSize: '14px'}}>Понял как: <b>{result.explanation}</b></div>
-                    <button className="btn-save" onClick={handleSave}>Сохранить в отчеты</button>
+                    <button className="btn-save" onClick={handleSave}>Сохранить отчет</button>
                   </div>
-                  
+
                   <div className="result-card">
                     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                       <span style={{fontWeight:700, fontSize:18}}>Результат</span>
