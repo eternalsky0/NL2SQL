@@ -8,3 +8,7 @@ pydantic>=2.0
 python-multipart>=0.0.6
 
 openai>=1.0.0
+
+apscheduler>=3.10
+croniter>=2.0
+tzdata>=2024.1

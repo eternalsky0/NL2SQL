@@ -1,70 +1,81 @@
 meta:
   domain: ride_hailing
   language: ru
-  notes: "Данные содержат логи тендеров. Один заказ может порождать несколько записей."
+  notes: "Реальная БД из train.csv. Один заказ (order_id) порождает несколько строк (tender_id)."
 
 tables:
   orders:
-    description: "Основная таблица поездок и предложений (тендеров)"
+    description: "Логи тендеров. Один заказ = несколько записей с разными tender_id."
     columns:
-      city_id: "ID города (всегда 67)"
-      order_id: "Уникальный идентификатор заказа"
-      tender_id: "Уникальный идентификатор конкретного предложения (тендера)"
-      user_id: "ID пассажира"
-      driver_id: "ID водителя"
-      status_order: "Статус заказа (accept, cancel, delete, done)"
-      status_tender: "Статус тендера (accept, decline, cancel, done, wait)"
-      order_timestamp: "Время создания заказа"
-      distance_in_meters: "Дистанция поездки в метрах"
-      duration_in_seconds: "Длительность поездки в секундах"
-      price_order_local: "Цена заказа для клиента"
-      price_tender_local: "Цена, предложенная в тендере"
+      city_id:                     "INTEGER — ID города"
+      order_id:                    "TEXT — уникальный ID заказа"
+      tender_id:                   "TEXT — ID тендера"
+      user_id:                     "TEXT — ID пассажира"
+      driver_id:                   "TEXT — ID водителя"
+      offset_hours:                "INTEGER — смещение часового пояса"
+      status_order:                "TEXT — статус заказа: done, cancel, accept, delete"
+      status_tender:               "TEXT — статус тендера: done, decline, cancel, accept, wait"
+      order_timestamp:             "TEXT — время создания заказа (ISO)"
+      tender_timestamp:            "TEXT"
+      driveraccept_timestamp:      "TEXT"
+      driverarrived_timestamp:     "TEXT"
+      driverstarttheride_timestamp: "TEXT"
+      driverdone_timestamp:        "TEXT"
+      clientcancel_timestamp:      "TEXT"
+      drivercancel_timestamp:      "TEXT"
+      order_modified_local:        "TEXT"
+      cancel_before_accept_local:  "TEXT"
+      distance_in_meters:          "INTEGER — дистанция в метрах"
+      duration_in_seconds:         "INTEGER — длительность в секундах"
+      price_order_local:           "REAL — цена заказа"
+      price_tender_local:          "REAL — цена тендера"
+      price_start_local:           "REAL — стартовая цена"
 
 metrics:
   total_orders:
     canonical: "количество заказов"
-    synonyms: ["заказы", "сколько заказов", "всего поездок"]
+    synonyms: ["заказы", "всего заказов", "уникальные заказы"]
     sql: "COUNT(DISTINCT order_id)"
 
   completed_orders:
-    canonical: "завершенные поездки"
+    canonical: "завершённые поездки"
     synonyms: ["успешные заказы", "выполненные поездки", "done"]
     sql: "COUNT(DISTINCT CASE WHEN status_order = 'done' THEN order_id END)"
 
   cancelled_orders:
     canonical: "отмены"
-    synonyms: ["отмененные заказы", "сколько отменили", "cancel"]
+    synonyms: ["отменённые заказы", "отмены заказов", "cancel"]
     sql: "COUNT(DISTINCT CASE WHEN status_order = 'cancel' THEN order_id END)"
 
   revenue:
     canonical: "выручка"
-    synonyms: ["доход", "оборот", "сумма продаж", "gmv"]
+    synonyms: ["доход", "оборот", "сумма", "gmv"]
     sql: "SUM(CASE WHEN status_tender = 'done' THEN price_order_local ELSE 0 END)"
 
   avg_check:
     canonical: "средний чек"
-    synonyms: ["средняя стоимость"]
+    synonyms: ["средняя стоимость заказа"]
     sql: "AVG(CASE WHEN status_tender = 'done' THEN price_order_local END)"
 
   conversion_rate:
     canonical: "конверсия в поездку"
-    synonyms: ["процент выполненных"]
-    sql: "CAST(COUNT(DISTINCT CASE WHEN status_order = 'done' THEN order_id END) AS REAL) / COUNT(DISTINCT order_id) * 100"
+    synonyms: ["процент выполненных", "конверсия"]
+    sql: "ROUND(COUNT(DISTINCT CASE WHEN status_order = 'done' THEN order_id END) * 100.0 / NULLIF(COUNT(DISTINCT order_id), 0), 2)"
 
   avg_distance_km:
     canonical: "средняя дистанция (км)"
     synonyms: ["среднее расстояние"]
-    sql: "AVG(CASE WHEN status_tender = 'done' THEN distance_in_meters END) / 1000.0"
+    sql: "ROUND(AVG(CASE WHEN status_tender = 'done' THEN distance_in_meters END) / 1000.0, 2)"
 
   avg_duration_min:
-    canonical: "среднее время в пути"
-    synonyms: ["длительность поездки"]
-    sql: "AVG(CASE WHEN status_tender = 'done' THEN duration_in_seconds END) / 60.0"
+    canonical: "среднее время в пути (мин)"
+    synonyms: ["длительность поездки", "среднее время"]
+    sql: "ROUND(AVG(CASE WHEN status_tender = 'done' THEN duration_in_seconds END) / 60.0, 1)"
 
   active_drivers:
     canonical: "активные водители"
-    synonyms: ["количество водителей", "кто на линии"]
-    sql: "COUNT(DISTINCT driver_id) WHERE driver_id IS NOT NULL"
+    synonyms: ["количество водителей", "уникальные водители"]
+    sql: "COUNT(DISTINCT CASE WHEN driver_id IS NOT NULL AND driver_id != '' THEN driver_id END)"
 
   active_users:
     canonical: "уникальные пассажиры"
@@ -78,16 +89,14 @@ dimensions:
     column: "DATE(order_timestamp)"
   hour:
     canonical: "час"
-    synonyms: ["время суток"]
-    column: "STRFTIME('%H', order_timestamp)"
-  status:
-    canonical: "статус"
+    synonyms: ["время суток", "по часам"]
+    column: "CAST(strftime('%H', order_timestamp) AS INTEGER)"
+  status_order:
+    canonical: "статус заказа"
     column: "status_order"
-  city:
-    canonical: "город"
-    # Так как город один (67), просто возвращаем ID. 
-    # В промпте объясним модели, что других городов нет.
-    column: "city_id"
+  status_tender:
+    canonical: "статус тендера"
+    column: "status_tender"
 
 rules:
   default_limit: 1000

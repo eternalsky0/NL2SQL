@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drivee · Отчёты</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --brand-green: #96ea28;
+      --brand-green-hover: #7ac517;
+      --bg-main: #f5f6f8;
+      --text-main: #1e1e1e;
+      --text-muted: #8e8e93;
+      --border-color: #ebebeb;
+      --sidebar-width: 220px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    html, body { height: 100%; background: var(--bg-main); }
+    body { display: flex; color: var(--text-main); font-size: 14px; line-height: 1.5; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: var(--sidebar-width); flex-shrink: 0; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 24px 12px; }
+    .sidebar-logo { padding: 0 12px; margin-bottom: 32px; }
+    .sidebar-logo img { height: 22px; display: block; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 13.5px; color: #555; cursor: pointer; text-decoration: none; border-radius: 10px; transition: all 0.12s; font-weight: 500; }
+    .nav-item:hover { background: #f5f5f7; color: var(--text-main); }
+    .nav-item.active { background: var(--brand-green); color: #000; font-weight: 700; }
+    .nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: var(--brand-green); color: #111; border-radius: 20px; font-size: 10px; font-weight: 800; padding: 1px 7px; }
+    .nav-section { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #ccc; padding: 16px 16px 6px; }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; border-bottom: 1px solid var(--border-color); background: #fff; flex-shrink: 0; }
+    .topbar-title { font-weight: 700; font-size: 15px; }
+    .content { flex: 1; overflow-y: auto; padding: 28px; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 0.12s; white-space: nowrap; }
+    .btn-green { background: var(--brand-green); color: #111; }
+    .btn-green:hover:not(:disabled) { background: var(--brand-green-hover); }
+    .btn-ghost { background: transparent; color: #666; border: 1px solid var(--border-color); }
+    .btn-ghost:hover:not(:disabled) { color: var(--text-main); border-color: #ccc; background: #f9f9f9; }
+    .btn-danger { background: #fff5f5; color: #dc2626; border: 1px solid #fecaca; }
+    .btn-danger:hover:not(:disabled) { background: #fee2e2; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 8px; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Report cards ── */
+    .reports-grid { display: flex; flex-direction: column; gap: 12px; max-width: 860px; }
+    .report-card { background: #fff; border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; transition: border-color 0.15s; }
+    .report-card:hover { border-color: #d4d4d8; }
+    .report-card.inactive { opacity: 0.55; }
+    .card-main { padding: 20px 24px; display: grid; grid-template-columns: 44px 1fr auto; gap: 0 16px; align-items: start; }
+    .report-icon { width: 44px; height: 44px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .report-body { min-width: 0; }
+    .report-name { font-weight: 700; font-size: 14px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .report-question { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 10px; }
+    .report-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid; }
+    .pill-green { background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; }
+    .pill-red   { background: #fff5f5; border-color: #fecaca; color: #dc2626; }
+    .pill-blue  { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+    .pill-lime  { background: #f9fef0; border-color: #d9f99d; color: #65a30d; font-family: monospace; }
+    .pill-dim   { background: var(--bg-main); border-color: var(--border-color); color: #aaa; }
+    .report-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+
+    /* ── Toggle ── */
+    .toggle { position: relative; width: 38px; height: 22px; cursor: pointer; flex-shrink: 0; }
+    .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .toggle-track { position: absolute; inset: 0; background: #e5e7eb; border-radius: 20px; transition: background 0.2s; }
+    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+    .toggle input:checked + .toggle-track { background: var(--brand-green); }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+
+    /* ── History footer ── */
+    .card-foot { display: flex; align-items: center; gap: 8px; padding: 10px 24px; border-top: 1px solid var(--border-color); cursor: pointer; font-size: 12px; color: #aaa; user-select: none; transition: all 0.12s; }
+    .card-foot:hover { color: #666; background: #fafafa; }
+    .card-foot-arrow { font-size: 10px; transition: transform 0.15s; }
+    .card-foot.open .card-foot-arrow { transform: rotate(90deg); }
+    .foot-run-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── History panel ── */
+    .history-panel { border-top: 1px solid var(--border-color); background: #fafafa; }
+    .history-header { padding: 12px 24px 6px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #ccc; }
+    .history-empty { padding: 16px 24px; font-size: 13px; color: #ccc; }
+    .run-row { display: flex; align-items: center; gap: 10px; padding: 10px 24px; border-top: 1px solid var(--border-color); font-size: 12.5px; }
+    .run-row:hover { background: #f5f5f7; }
+    .run-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .run-date { color: #888; font-family: monospace; font-size: 11.5px; flex-shrink: 0; }
+    .run-trigger { padding: 1px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .trigger-manual   { background: #eff6ff; color: #2563eb; }
+    .trigger-schedule { background: #f9fef0; color: #65a30d; }
+    .trigger-api      { background: #faf5ff; color: #7c3aed; }
+    .run-error-text { color: #dc2626; font-size: 11.5px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Empty ── */
+    .empty { text-align: center; padding: 80px 20px; color: #ccc; }
+    .empty h3 { font-size: 16px; color: #888; margin-bottom: 8px; }
+
+    /* ── FAB ── */
+    .fab { position: fixed; bottom: 28px; right: 28px; z-index: 100; }
+
+    /* ── Modal ── */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-box { background: #fff; border: 1px solid var(--border-color); border-radius: 20px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.18s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 16px; border-bottom: 1px solid var(--border-color); }
+    .modal-head h2 { font-size: 16px; font-weight: 700; }
+    .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+    .modal-foot { padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; justify-content: flex-end; }
+    .close-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; color: #888; cursor: pointer; font-size: 14px; transition: all 0.1s; }
+    .close-btn:hover { color: var(--text-main); }
+
+    /* ── Form ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.07em; }
+    .field-row { display: flex; gap: 12px; }
+    .field-row .field { flex: 1; }
+    .field-hint { font-size: 11.5px; color: #aaa; }
+    input[type=text], input[type=email], textarea, select {
+      width: 100%; background: var(--bg-main); border: 1.5px solid var(--border-color);
+      border-radius: 10px; color: var(--text-main); font-size: 13.5px; font-family: inherit;
+      padding: 9px 12px; outline: none; transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--brand-green); background: #fff; }
+    textarea { min-height: 80px; resize: vertical; font-family: monospace; font-size: 12px; line-height: 1.65; }
+    select { cursor: pointer; }
+    ::placeholder { color: #ccc; }
+
+    .preset-wrap { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    .preset-pill { padding: 3px 10px; border-radius: 20px; font-size: 11.5px; background: var(--bg-main); border: 1.5px solid var(--border-color); color: #888; cursor: pointer; transition: all 0.12s; }
+    .preset-pill:hover { color: #65a30d; border-color: #d9f99d; }
+    .preset-pill.on { color: #65a30d; border-color: #d9f99d; background: #f9fef0; }
+    .cron-ok  { font-size: 11.5px; color: #16a34a; font-family: monospace; }
+    .cron-err { font-size: 11.5px; color: #dc2626; }
+
+    .rcpt-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .rcpt-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 20px; font-size: 12px; color: #666; }
+    .rcpt-rm { cursor: pointer; color: #ccc; line-height: 1; font-size: 12px; }
+    .rcpt-rm:hover { color: #dc2626; }
+
+    /* ── Result modal ── */
+    .result-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(6px); z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
+    .result-modal { background: #fff; border: 1px solid var(--border-color); border-radius: 20px; width: 96%; max-width: 900px; max-height: 94vh; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.2s ease; box-shadow: 0 24px 80px rgba(0,0,0,0.12); }
+    .result-head { padding: 24px 28px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: flex-start; gap: 16px; flex-shrink: 0; }
+    .result-head-text { flex: 1; min-width: 0; }
+    .result-head-text h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .result-head-text p { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 10px; }
+    .run-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+    .run-meta-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 20px; font-size: 11.5px; background: var(--bg-main); border: 1px solid var(--border-color); color: #888; font-family: monospace; }
+    .result-body { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Stat cards */
+    .stat-grid { display: grid; gap: 10px; }
+    .stat-card { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 20px; }
+    .stat-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 8px; }
+    .stat-value { font-size: 26px; font-weight: 800; color: var(--text-main); line-height: 1; }
+    .stat-value.accent { color: #16a34a; }
+    .stat-sub { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+    /* KPI */
+    .kpi-block { background: var(--bg-main); border: 1px solid var(--border-color); border-top: 3px solid var(--brand-green); border-radius: 14px; padding: 36px 24px; text-align: center; }
+    .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 14px; }
+    .kpi-value { font-size: 60px; font-weight: 800; color: var(--text-main); line-height: 1; }
+
+    /* Chart */
+    .chart-area { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; height: 280px; position: relative; }
+    .chart-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 14px; }
+
+    /* Table */
+    .section-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 8px; }
+    .tbl-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; background: #fff; }
+    .tbl-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tbl-wrap th { padding: 10px 16px; text-align: left; background: var(--bg-main); color: #aaa; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+    .tbl-wrap td { padding: 9px 16px; border-bottom: 1px solid var(--bg-main); color: #555; font-family: monospace; font-size: 12.5px; white-space: nowrap; }
+    .tbl-wrap td:first-child { color: var(--text-main); font-weight: 600; }
+    .tbl-wrap tr:last-child td { border-bottom: none; }
+    .tbl-wrap tr:hover td { background: #fafafa; }
+    .tbl-footer { text-align: center; padding: 8px; font-size: 11.5px; color: #aaa; border-top: 1px solid var(--border-color); }
+
+    /* SQL */
+    .sql-toggle { cursor: pointer; font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; background: none; border: none; font-family: inherit; padding: 0; }
+    .sql-toggle:hover { color: #666; }
+    .sql-block { background: #f8f8fa; border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; font-family: monospace; font-size: 12px; color: #555; overflow-x: auto; white-space: pre; margin-top: 10px; line-height: 1.7; }
+
+    /* ── Inbox ── */
+    .inbox-list { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
+    .inbox-card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 20px; display: flex; align-items: flex-start; gap: 14px; cursor: pointer; transition: border-color 0.12s; }
+    .inbox-card:hover { border-color: #ccc; }
+    .inbox-card.unread { border-left: 3px solid var(--brand-green); }
+    .i-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .i-body { flex: 1; min-width: 0; }
+    .i-subj { font-size: 13.5px; font-weight: 600; margin-bottom: 3px; }
+    .i-prev { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; }
+    .i-time { font-size: 11px; color: #bbb; flex-shrink: 0; font-family: monospace; }
+
+    /* ── Spinner ── */
+    .spin { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.08); border-top-color: currentColor; border-radius: 50%; animation: rot 0.65s linear infinite; flex-shrink: 0; display: inline-block; }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast-wrap { position: fixed; bottom: 22px; right: 22px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 11px 18px; font-size: 13px; color: var(--text-main); display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); animation: toastIn 0.2s ease; font-weight: 500; }
+    .toast.ok  { border-left: 3px solid var(--brand-green); }
+    .toast.err { border-left: 3px solid #dc2626; }
+    @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+const API = "http://localhost:8000";
+
+// ── Helpers ──────────────────────────────────────────────────────
+const fmtNum = (v) => {
+  if (v === null || v === undefined || v === "") return "—";
+  const n = Number(v);
+  if (!isNaN(n)) return Number.isInteger(n) ? n.toLocaleString("ru-RU") : n.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
+  return String(v);
+};
+const fmtDate = (d) => d ? new Date(d).toLocaleString("ru-RU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+const fmtDur = (ms) => !ms ? null : ms < 1000 ? `${ms} мс` : `${(ms/1000).toFixed(1)} с`;
+const ICONS = { bar: "📊", line: "📈", pie: "🥧", table: "📋" };
+const TRIGGER_LABELS = { manual: "▶ Вручную", schedule: "⏱ Расписание", api: "🔌 API" };
+
+// ── Cron humanizer ────────────────────────────────────────────────
+const DOW_RU = { 0: ["Каждое","воскресенье"], 1: ["Каждый","понедельник"], 2: ["Каждый","вторник"], 3: ["Каждую","среду"], 4: ["Каждый","четверг"], 5: ["Каждую","пятницу"], 6: ["Каждую","субботу"] };
+function humanCron(expr) {
+  if (!expr) return "";
+  const p = expr.trim().split(/\s+/);
+  if (p.length !== 5) return expr;
+  const [min, hour, dom, month, dow] = p;
+  if (!/^\d+$/.test(min) || !/^\d+$/.test(hour)) return expr;
+  const t = `${hour.padStart(2,"0")}:${min.padStart(2,"0")}`;
+  if (dom === "*" && month === "*") {
+    if (dow === "*") return `Ежедневно в ${t}`;
+    if (dow === "1-5") return `По будням в ${t}`;
+    if (/^\d$/.test(dow) && DOW_RU[+dow]) return `${DOW_RU[+dow][0]} ${DOW_RU[+dow][1]} в ${t}`;
+  }
+  if (month === "*" && dow === "*" && /^\d+$/.test(dom)) return `${dom}-го числа каждого месяца в ${t}`;
+  return expr;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function useToast() {
+  const [toasts, set] = useState([]);
+  const add = (msg, type = "ok") => {
+    const id = Date.now() + Math.random();
+    set(t => [...t, { id, msg, type }]);
+    setTimeout(() => set(t => t.filter(x => x.id !== id)), 3500);
+  };
+  return { toasts, toast: add };
+}
+function Toasts({ toasts }) {
+  return (
+    <div className="toast-wrap">
+      {toasts.map(t => <div key={t.id} className={`toast ${t.type}`}>{t.type === "ok" ? "✓" : "✕"} {t.msg}</div>)}
+    </div>
+  );
+}
+
+// ── Chart ─────────────────────────────────────────────────────────
+function ReportChart({ chartType, columns, rows }) {
+  const ref = useRef(null);
+  const inst = useRef(null);
+  const type = chartType === "pie" ? "pie" : chartType === "line" ? "line" : "bar";
+  useEffect(() => {
+    if (!ref.current) return;
+    if (inst.current) inst.current.destroy();
+    const labels = rows.map(r => { const s = String(r[0]); return s.length > 20 ? s.slice(0,18)+"…" : s; });
+    const values = rows.map(r => Number(r[1]) || 0);
+    const PIE = ["#96ea28","#60a5fa","#fbbf24","#f87171","#a78bfa","#34d399","#fb923c","#38bdf8"];
+    inst.current = new Chart(ref.current, {
+      type,
+      data: {
+        labels,
+        datasets: [{
+          label: columns[1] || "Значение",
+          data: values,
+          backgroundColor: type === "pie" ? PIE : "#1e1e1e",
+          hoverBackgroundColor: type === "pie" ? PIE : "#96ea28",
+          borderColor: type === "line" ? "#96ea28" : "transparent",
+          borderWidth: type === "line" ? 2.5 : 0,
+          fill: type === "line" ? { target: "origin", above: "rgba(150,234,40,0.07)" } : false,
+          tension: 0.4,
+          pointBackgroundColor: "#96ea28",
+          pointRadius: type === "line" ? 4 : 0,
+          borderRadius: type === "bar" ? 6 : 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
+        plugins: { legend: { display: type === "pie", labels: { color: "#888", font: { size: 11 } } }, tooltip: { backgroundColor: "#fff", titleColor: "#111", bodyColor: "#888", borderColor: "#ebebeb", borderWidth: 1, padding: 10 } },
+        scales: type === "pie" ? {} : {
+          x: { ticks: { color: "#aaa", font: { size: 11 }, maxRotation: 35 }, grid: { display: false } },
+          y: { ticks: { color: "#aaa", font: { size: 11 } }, grid: { color: "#f5f5f7" } }
+        }
+      }
+    });
+    return () => { if (inst.current) inst.current.destroy(); };
+  }, [chartType, JSON.stringify(rows.slice(0,60))]);
+  return <canvas ref={ref} />;
+}
+
+// ── Stat cards ────────────────────────────────────────────────────
+function buildStats(columns, rows) {
+  if (!rows.length || columns.length < 2) return [];
+  let colIdx = -1;
+  for (let i = 1; i < columns.length; i++) {
+    if (!isNaN(Number(rows[0][i])) && rows[0][i] !== "") { colIdx = i; break; }
+  }
+  if (colIdx === -1) return [];
+  const vals = rows.map(r => r[colIdx]).filter(v => v !== "" && !isNaN(Number(v))).map(Number);
+  if (!vals.length) return [];
+  const total = vals.reduce((a,b) => a+b, 0);
+  const max = Math.max(...vals);
+  const avg = total / vals.length;
+  const maxRow = rows.find(r => Number(r[colIdx]) === max);
+  if (rows.length === 1) return [{ label: columns[colIdx].replace(/_/g," "), value: fmtNum(vals[0]), accent: true }];
+  return [
+    { label: "Итого · " + columns[colIdx].replace(/_/g," "), value: fmtNum(total) },
+    maxRow ? { label: "Лидер · " + columns[0].replace(/_/g," "), value: String(maxRow[0]), sub: fmtNum(max), accent: true } : null,
+    { label: "Среднее · " + columns[colIdx].replace(/_/g," "), value: fmtNum(avg) },
+  ].filter(Boolean).slice(0,3);
+}
+
+// ── Result modal ──────────────────────────────────────────────────
+function ResultModal({ report, data, runMeta, onClose }) {
+  const { columns, rows } = data;
+  const chartType = report.chart_type || "bar";
+  const stats = buildStats(columns, rows);
+  const isKpi = columns.length === 1 && rows.length === 1;
+  const hasNum = columns.length >= 2 && rows.length > 0 && !isNaN(Number(rows[0]?.[1]));
+  const showChart = !isKpi && chartType !== "table" && hasNum && rows.length > 1;
+  const [sqlOpen, setSqlOpen] = useState(false);
+  const MAX = 100;
+  return (
+    <div className="result-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="result-modal">
+        <div className="result-head">
+          <div className="result-head-text">
+            <h2>{report.name}</h2>
+            <p>{report.question}</p>
+            {runMeta && (
+              <div className="run-meta">
+                {runMeta.trigger && <span className="run-meta-chip">{TRIGGER_LABELS[runMeta.trigger] || runMeta.trigger}</span>}
+                {runMeta.finished_at && <span className="run-meta-chip">{fmtDate(runMeta.finished_at)}</span>}
+                {runMeta.row_count != null && <span className="run-meta-chip">{runMeta.row_count.toLocaleString("ru-RU")} строк</span>}
+                {runMeta.duration_ms && <span className="run-meta-chip">{fmtDur(runMeta.duration_ms)}</span>}
+              </div>
+            )}
+          </div>
+          <button className="close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="result-body">
+          {isKpi && (
+            <div className="kpi-block">
+              <div className="kpi-label">{columns[0].replace(/_/g," ")}</div>
+              <div className="kpi-value">{fmtNum(rows[0][0])}</div>
+            </div>
+          )}
+          {!isKpi && stats.length > 0 && (
+            <div className="stat-grid" style={{ gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
+              {stats.map((s,i) => (
+                <div key={i} className="stat-card">
+                  <div className="stat-label">{s.label}</div>
+                  <div className={`stat-value ${s.accent ? "accent" : ""}`}>{s.value}</div>
+                  {s.sub && <div className="stat-sub">{s.sub}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          {showChart && (
+            <div className="chart-area">
+              <div className="chart-title">{columns[1]?.replace(/_/g," ")} по {columns[0]?.replace(/_/g," ")}</div>
+              <ReportChart chartType={chartType} columns={columns} rows={rows.slice(0,60)} />
+            </div>
+          )}
+          <div>
+            <div className="section-label">Данные · {rows.length.toLocaleString("ru-RU")} строк{rows.length > MAX ? ` (показано ${MAX})` : ""}</div>
+            <div className="tbl-wrap">
+              <table>
+                <thead><tr>{columns.map((c,i) => <th key={i}>{c.replace(/_/g," ")}</th>)}</tr></thead>
+                <tbody>{rows.slice(0,MAX).map((row,i) => <tr key={i}>{row.map((v,j) => <td key={j}>{fmtNum(v)}</td>)}</tr>)}</tbody>
+              </table>
+              {rows.length > MAX && <div className="tbl-footer">Показано {MAX} из {rows.length.toLocaleString("ru-RU")} строк</div>}
+            </div>
+          </div>
+          <div>
+            <button className="sql-toggle" onClick={() => setSqlOpen(v => !v)}><span>{sqlOpen ? "▾" : "▸"}</span> SQL-запрос</button>
+            {sqlOpen && <div className="sql-block">{report.sql}</div>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Cron validation hook ──────────────────────────────────────────
+function useCron(expr, tz) {
+  const [res, set] = useState(null);
+  useEffect(() => {
+    if (!expr) { set(null); return; }
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`${API}/cron/validate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expr, tz }) });
+        set(await r.json());
+      } catch { set(null); }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [expr, tz]);
+  return res;
+}
+
+// ── Report form ───────────────────────────────────────────────────
+function ReportForm({ report, onClose, onSaved, toast }) {
+  const isEdit = !!report?.id;
+  const [name, setName] = useState(report?.name || "");
+  const [question, setQuestion] = useState(report?.question || "");
+  const [sql, setSql] = useState(report?.sql || "");
+  const [chartType, setChartType] = useState(report?.chart_type || "bar");
+  const [cron, setCron] = useState(report?.schedule_cron || "");
+  const [tz, setTz] = useState(report?.timezone || "Europe/Moscow");
+  const [rcptInput, setRcptInput] = useState("");
+  const [rcpts, setRcpts] = useState(report?.recipients || []);
+  const [presets, setPresets] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [genning, setGenning] = useState(false);
+  const cronRes = useCron(cron, tz);
+
+  useEffect(() => { fetch(`${API}/cron/presets`).then(r => r.json()).then(setPresets).catch(() => {}); }, []);
+
+  const genSql = async () => {
+    if (!question.trim()) { toast("Введите вопрос", "err"); return; }
+    setGenning(true);
+    try {
+      const r = await fetch(`${API}/query`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: question.trim(), username: "system" }) });
+      const d = await r.json();
+      if (d.error || !r.ok) { toast(d.message || d.detail || "Ошибка генерации", "err"); }
+      else {
+        const sqlVal = d.sql || d.data?.sql || "";
+        setSql(sqlVal);
+        if (d.chart_type) setChartType(d.chart_type);
+        toast("SQL сгенерирован — проверьте перед сохранением");
+      }
+    } catch (e) { toast(e.message, "err"); }
+    setGenning(false);
+  };
+
+  const addRcpt = () => { const v = rcptInput.trim(); if (v && !rcpts.includes(v)) setRcpts(r => [...r, v]); setRcptInput(""); };
+
+  const save = async () => {
+    if (!name || !question || !sql) { toast("Заполните Название, Вопрос и SQL", "err"); return; }
+    setSaving(true);
+    try {
+      const url = isEdit ? `${API}/reports/${report.id}` : `${API}/reports`;
+      const r = await fetch(url, {
+        method: isEdit ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, question, sql, chart_type: chartType, schedule_cron: cron || null, timezone: tz, recipients: rcpts })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      toast(isEdit ? "Отчёт обновлён" : "Отчёт создан");
+      onSaved(await r.json());
+    } catch (e) { toast(e.message, "err"); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <div className="modal-head">
+          <h2>{isEdit ? "Редактировать отчёт" : "Новый отчёт"}</h2>
+          <button className="close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="field">
+            <label>Название *</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Еженедельный пульс городов" />
+          </div>
+          <div className="field">
+            <label>Вопрос на русском *</label>
+            <div style={{display:"flex",gap:8}}>
+              <input type="text" value={question} onChange={e => setQuestion(e.target.value)} placeholder="Топ 10 водителей по поездкам за неделю" onKeyDown={e => e.key === "Enter" && genSql()} />
+              <button className="btn btn-ghost btn-sm" onClick={genSql} disabled={genning || !question.trim()} style={{flex:'0 0 auto'}}>
+                {genning ? <span className="spin" /> : "→ SQL"}
+              </button>
+            </div>
+            <div className="field-hint">Напишите вопрос и нажмите «→ SQL»</div>
+          </div>
+          <div className="field">
+            <label>SQL {!sql && "*"}</label>
+            {genning
+              ? <div style={{padding:"10px 12px",background:"var(--bg-main)",border:"1.5px solid var(--border-color)",borderRadius:10,fontSize:13,color:"#aaa",display:"flex",alignItems:"center",gap:8}}><span className="spin" /> Генерирую SQL…</div>
+              : <textarea value={sql} onChange={e => setSql(e.target.value)} placeholder="Нажмите «→ SQL» или введите вручную" />
+            }
+            {sql && <div className="field-hint">Только SELECT · LIMIT добавляется автоматически</div>}
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label>График</label>
+              <select value={chartType} onChange={e => setChartType(e.target.value)}>
+                <option value="bar">📊 Столбчатый</option>
+                <option value="line">📈 Линейный</option>
+                <option value="pie">🥧 Круговой</option>
+                <option value="table">📋 Таблица</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Часовой пояс</label>
+              <select value={tz} onChange={e => setTz(e.target.value)}>
+                <option value="Europe/Moscow">Москва (UTC+3)</option>
+                <option value="Europe/Kaliningrad">Калининград (UTC+2)</option>
+                <option value="Asia/Yekaterinburg">Екатеринбург (UTC+5)</option>
+                <option value="Asia/Novosibirsk">Новосибирск (UTC+7)</option>
+                <option value="Asia/Vladivostok">Владивосток (UTC+10)</option>
+                <option value="UTC">UTC</option>
+              </select>
+            </div>
+          </div>
+          <div className="field">
+            <label>Расписание cron (опционально)</label>
+            <input type="text" value={cron} onChange={e => setCron(e.target.value)} placeholder="0 9 * * 1  — каждый понедельник в 9:00" style={{fontFamily:"monospace",fontSize:13}} />
+            {cron && cronRes && (cronRes.ok ? <div className="cron-ok">✓ {cronRes.label}</div> : <div className="cron-err">✕ {cronRes.error}</div>)}
+            <div className="preset-wrap">
+              {Object.entries(presets).map(([k, p]) => (
+                <span key={k} className={`preset-pill ${cron === p.cron ? "on" : ""}`} onClick={() => setCron(p.cron)}>{p.label}</span>
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <label>Email-получатели (опционально)</label>
+            <div style={{display:"flex",gap:8}}>
+              <input type="email" value={rcptInput} onChange={e => setRcptInput(e.target.value)} onKeyDown={e => e.key === "Enter" && addRcpt()} placeholder="ops@company.com" />
+              <button className="btn btn-ghost btn-sm" onClick={addRcpt} style={{flex:'0 0 auto'}}>+ Добавить</button>
+            </div>
+            {rcpts.length > 0 && (
+              <div className="rcpt-list">
+                {rcpts.map(r => (
+                  <span key={r} className="rcpt-tag">{r} <span className="rcpt-rm" onClick={() => setRcpts(x => x.filter(v => v !== r))}>✕</span></span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
+          <button className="btn btn-green" onClick={save} disabled={saving || genning}>
+            {saving && <span className="spin" />}
+            {isEdit ? "Сохранить" : "Создать отчёт"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Run row ───────────────────────────────────────────────────────
+function RunRow({ run, report, onView }) {
+  const [loading, setLoading] = useState(false);
+  const ok = run.status === "success";
+  const triggerClass = { manual: "trigger-manual", schedule: "trigger-schedule", api: "trigger-api" }[run.trigger] || "trigger-manual";
+  const handleView = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`${API}/reports/${report.id}/runs/${run.id}`);
+      const full = await r.json();
+      const snap = full.data_snapshot;
+      if (snap?.columns?.length) onView(report, snap, { trigger: run.trigger, finished_at: run.finished_at, duration_ms: run.duration_ms, row_count: run.row_count });
+    } catch {}
+    setLoading(false);
+  };
+  return (
+    <div className="run-row">
+      <div className="run-dot" style={{ background: ok ? "#16a34a" : "#dc2626" }} />
+      <div className="run-date">{fmtDate(run.finished_at || run.started_at)}</div>
+      <span className={`run-trigger ${triggerClass}`}>{TRIGGER_LABELS[run.trigger] || run.trigger}</span>
+      {ok ? <span style={{color:"#aaa",fontSize:12}}>{run.row_count?.toLocaleString("ru-RU")} строк</span> : <span className="run-error-text">{run.error || "ошибка"}</span>}
+      <span style={{color:"#ccc",fontFamily:"monospace",fontSize:11.5,marginLeft:4}}>{fmtDur(run.duration_ms)}</span>
+      <span style={{flex:1}} />
+      {ok && <button className="btn btn-ghost btn-sm" onClick={handleView} disabled={loading}>{loading ? <span className="spin" /> : "Открыть"}</button>}
+    </div>
+  );
+}
+
+// ── Reports tab ───────────────────────────────────────────────────
+function ReportsTab({ toast }) {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [formReport, setFormReport] = useState(undefined);
+  const [resultData, setResultData] = useState(null);
+  const [running, setRunning] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [runsCache, setRunsCache] = useState({});
+  const [runsLoading, setRunsLoading] = useState(new Set());
+
+  const load = async () => {
+    setLoading(true);
+    try { setReports(await fetch(`${API}/reports`).then(r => r.json())); } catch {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const toggleHistory = async (id) => {
+    if (expandedId === id) { setExpandedId(null); return; }
+    setExpandedId(id);
+    if (!runsCache[id]) {
+      setRunsLoading(s => new Set(s).add(id));
+      try {
+        const runs = await fetch(`${API}/reports/${id}/runs`).then(r => r.json());
+        setRunsCache(c => ({ ...c, [id]: runs }));
+      } catch {}
+      setRunsLoading(s => { const ns = new Set(s); ns.delete(id); return ns; });
+    }
+  };
+
+  const runReport = async (report, e) => {
+    e.stopPropagation();
+    if (running === report.id) return;
+    setRunning(report.id);
+    try {
+      const r = await fetch(`${API}/reports/${report.id}/run`, { method: "POST" });
+      const d = await r.json();
+      if (d.status === "success") {
+        toast(`Готово · ${d.row_count} строк`);
+        setRunsCache(c => { const nc = {...c}; delete nc[report.id]; return nc; });
+        load();
+        if (d.data?.columns?.length) {
+          setResultData({ report, data: d.data, runMeta: { trigger: "manual", finished_at: new Date().toISOString(), row_count: d.row_count } });
+          if (expandedId === report.id) {
+            setRunsLoading(s => new Set(s).add(report.id));
+            try {
+              const runs = await fetch(`${API}/reports/${report.id}/runs`).then(r => r.json());
+              setRunsCache(c => ({ ...c, [report.id]: runs }));
+            } catch {}
+            setRunsLoading(s => { const ns = new Set(s); ns.delete(report.id); return ns; });
+          }
+        }
+      } else toast(d.error || "Ошибка выполнения", "err");
+    } catch (e) { toast(e.message, "err"); }
+    setRunning(null);
+  };
+
+  const toggleEnabled = async (report, e) => {
+    e.stopPropagation();
+    try {
+      const updated = await fetch(`${API}/reports/${report.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: !report.enabled }) }).then(r => r.json());
+      setReports(rs => rs.map(r => r.id === updated.id ? updated : r));
+    } catch (e) { toast(e.message, "err"); }
+  };
+
+  const deleteReport = async (report) => {
+    if (!confirm(`Удалить отчёт «${report.name}»?`)) return;
+    try {
+      await fetch(`${API}/reports/${report.id}`, { method: "DELETE" });
+      setReports(rs => rs.filter(r => r.id !== report.id));
+      if (expandedId === report.id) setExpandedId(null);
+      toast("Отчёт удалён");
+    } catch (e) { toast(e.message, "err"); }
+  };
+
+  if (loading) return <div style={{padding:40,textAlign:"center",color:"#aaa",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}><span className="spin" style={{color:"#aaa"}} /> Загрузка…</div>;
+
+  return (
+    <>
+      {reports.length === 0 ? (
+        <div className="empty"><h3>Отчётов пока нет</h3><p style={{fontSize:13}}>Создайте первый — напишите вопрос, SQL сгенерируется автоматически</p></div>
+      ) : (
+        <div className="reports-grid">
+          {reports.map(r => {
+            const isExpanded = expandedId === r.id;
+            const runs = runsCache[r.id];
+            const isRunsLoading = runsLoading.has(r.id);
+            return (
+              <div key={r.id} className={`report-card ${!r.enabled ? "inactive" : ""}`}>
+                <div className="card-main">
+                  <div className="report-icon">{ICONS[r.chart_type] || "📋"}</div>
+                  <div className="report-body">
+                    <div className="report-name">{r.name}</div>
+                    <div className="report-question">{r.question}</div>
+                    <div className="report-meta">
+                      {r.schedule_cron && <span className="pill pill-lime" title={r.schedule_cron}>⏱ {humanCron(r.schedule_cron)}</span>}
+                      {r.next_run_at && r.enabled && <span className="pill pill-blue">→ {fmtDate(r.next_run_at)}</span>}
+                      {r.last_status === "success" && <span className="pill pill-green">✓ успешно</span>}
+                      {r.last_status === "error" && <span className="pill pill-red">✕ ошибка</span>}
+                      {!r.enabled && <span className="pill pill-dim">выключен</span>}
+                    </div>
+                  </div>
+                  <div className="report-actions">
+                    <label className="toggle" onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={!!r.enabled} onChange={e => toggleEnabled(r, e)} />
+                      <div className="toggle-track" />
+                      <div className="toggle-thumb" />
+                    </label>
+                    <button className="btn btn-green btn-sm" onClick={e => runReport(r, e)} disabled={running === r.id}>
+                      {running === r.id ? <><span className="spin" style={{color:"#111"}} /> Запуск…</> : "▶ Запустить"}
+                    </button>
+                    <div style={{display:"flex",gap:5}}>
+                      <button className="btn btn-ghost btn-sm" onClick={e => { e.stopPropagation(); setFormReport(r); }}>⚙</button>
+                      <button className="btn btn-danger btn-sm" onClick={e => { e.stopPropagation(); deleteReport(r); }}>✕</button>
+                    </div>
+                  </div>
+                </div>
+                <div className={`card-foot ${isExpanded ? "open" : ""}`} onClick={() => toggleHistory(r.id)}>
+                  <span className="card-foot-arrow">▶</span>
+                  {r.last_run_at ? (
+                    <>
+                      <div className="foot-run-dot" style={{ background: r.last_status === "success" ? "#16a34a" : r.last_status === "error" ? "#dc2626" : "#ccc" }} />
+                      <span>Последний: {fmtDate(r.last_run_at)}</span>
+                    </>
+                  ) : <span>Ещё не запускался</span>}
+                  <span style={{marginLeft:"auto",fontSize:11,color:"#ccc"}}>{isExpanded ? "Скрыть" : "История"}</span>
+                </div>
+                {isExpanded && (
+                  <div className="history-panel">
+                    <div className="history-header">История запусков</div>
+                    {isRunsLoading ? (
+                      <div className="history-empty" style={{display:"flex",alignItems:"center",gap:8}}><span className="spin" style={{color:"#ccc"}} /> Загрузка…</div>
+                    ) : !runs?.length ? (
+                      <div className="history-empty">Запусков ещё не было</div>
+                    ) : (
+                      runs.map(run => (
+                        <RunRow key={run.id} run={run} report={r} onView={(rep, data, meta) => setResultData({ report: rep, data, runMeta: meta })} />
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* FAB */}
+      <div className="fab">
+        <button className="btn btn-green" onClick={() => setFormReport(null)} style={{height:44,paddingInline:22,borderRadius:12,boxShadow:"0 4px 20px rgba(150,234,40,0.25)"}}>
+          + Новый отчёт
+        </button>
+      </div>
+
+      {formReport !== undefined && (
+        <ReportForm report={formReport} onClose={() => setFormReport(undefined)} onSaved={() => { load(); setFormReport(undefined); }} toast={toast} />
+      )}
+      {resultData && (
+        <ResultModal report={resultData.report} data={resultData.data} runMeta={resultData.runMeta} onClose={() => setResultData(null)} />
+      )}
+    </>
+  );
+}
+
+// ── Inbox tab ─────────────────────────────────────────────────────
+function InboxTab({ toast, onCountChange }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API}/inbox`).then(r => r.json())
+      .then(d => { setItems(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    onCountChange(items.filter(i => !i.read_at).length);
+  }, [items]);
+
+  const markRead = async (id) => {
+    await fetch(`${API}/inbox/${id}/read`, { method: "POST" });
+    setItems(i => i.map(x => x.id === id ? {...x, read_at: new Date().toISOString()} : x));
+  };
+
+  if (loading) return <div style={{padding:40,display:"flex",alignItems:"center",gap:10,color:"#aaa"}}><span className="spin" style={{color:"#aaa"}} /> Загрузка…</div>;
+  if (!items.length) return <div className="empty"><h3>Входящих нет</h3><p>Когда отчёт выполнится — уведомление появится здесь</p></div>;
+  return (
+    <div className="inbox-list">
+      {items.map(it => (
+        <div key={it.id} className={`inbox-card ${!it.read_at ? "unread" : ""}`} onClick={() => !it.read_at && markRead(it.id)}>
+          <div className="i-dot" style={{ background: it.read_at ? "#ccc" : "#96ea28" }} />
+          <div className="i-body">
+            <div className="i-subj">{it.subject || it.report_name}</div>
+            <div className="i-prev">{it.preview || "—"}</div>
+          </div>
+          <div className="i-time">{fmtDate(it.created_at)}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab] = useState("reports");
+  const [unread, setUnread] = useState(0);
+  const { toasts, toast } = useToast();
+
+  useEffect(() => {
+    const poll = async () => {
+      try { const d = await fetch(`${API}/inbox/unread_count`).then(r => r.json()); setUnread(d.count || 0); } catch {}
+    };
+    poll();
+    const t = setInterval(poll, 15000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <>
+      <nav className="sidebar">
+        <div className="sidebar-logo">
+          <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" />
+        </div>
+        <div className="nav-section">Навигация</div>
+        <a href="index.html" className="nav-item"><span className="nav-icon">💬</span> Чат</a>
+        <div className={`nav-item ${tab === "reports" ? "active" : ""}`} onClick={() => setTab("reports")}>
+          <span className="nav-icon">📋</span> Отчёты
+        </div>
+        <div className={`nav-item ${tab === "inbox" ? "active" : ""}`} onClick={() => setTab("inbox")}>
+          <span className="nav-icon">📬</span> Входящие
+          {unread > 0 && <span className="nav-badge">{unread}</span>}
+        </div>
+      </nav>
+
+      <div className="main">
+        <div className="topbar">
+          <div className="topbar-title">{tab === "reports" ? "Отчёты и расписание" : "Входящие уведомления"}</div>
+        </div>
+        <div className="content">
+          {tab === "reports" && <ReportsTab toast={toast} />}
+          {tab === "inbox" && <InboxTab toast={toast} onCountChange={setUnread} />}
+        </div>
+      </div>
+
+      <Toasts toasts={toasts} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
