@@ -2,47 +2,128 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Drivee · Аналитика без SQL</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
+    :root {
+      --brand-green: #9df123;
+      --brand-green-hover: #8be01b;
+      --bg-gradient: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-color: #e5e7eb;
+      --panel-bg: #ffffff;
+      --sql-bg: #f9fafb;
+    }
+
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f6f7f9; color: #1a1a1a; }
-    .app { max-width: 900px; margin: 40px auto; padding: 24px; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-    .header { font-size: 24px; font-weight: bold; margin-bottom: 24px; color: #111827; }
-    .header span { color: #A3E635; }
     
-    .chat { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
-    .msg { padding: 16px; border-radius: 12px; line-height: 1.5; font-size: 15px; }
-    .msg.user { background: #f3f4f6; align-self: flex-end; color: #111827; font-weight: 500; }
-    .msg.bot { background: #fff; border: 1px solid #e5e7eb; width: 100%; }
+    body, html { 
+      margin: 0; 
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      background: var(--bg-gradient); 
+      color: var(--text-main); 
+      height: 100vh;
+      overflow: hidden;
+    }
 
-    .input-wrap { position: relative; }
-    .input-box { width: 100%; height: 60px; padding: 18px 110px 18px 18px; border-radius: 12px; border: 2px solid #e5e7eb; font-size: 16px; font-family: inherit; resize: none; outline: none; position: relative; z-index: 2; background: transparent; }
-    .input-box:focus { border-color: #A3E635; }
+    /* ФОНОВЫЕ ЭЛЕМЕНТЫ */
+    .bg-elements {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-circle {
+      position: absolute; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+    }
+    .bg-wave {
+      position: absolute; left: -10%; top: 20%; width: 50%; height: 60%; border: 2px solid rgba(157, 241, 35, 0.4); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(-15deg);
+    }
+    .bg-wave-2 {
+      position: absolute; left: -5%; top: 25%; width: 40%; height: 50%; border: 1px solid rgba(255,255,255,0.3); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+
+    /* НАВИГАЦИЯ */
+    .navbar {
+      position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; background: rgba(255, 255, 255, 0.95);
+    }
+    .logo { font-size: 28px; font-weight: 800; display: flex; align-items: center; letter-spacing: -1px; }
+    .logo-driv { color: #000; }
+    .logo-ee { background: var(--brand-green); color: #000; padding: 0 4px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; height: 36px; width: 44px; margin-left: 2px; }
     
-    .ghost { position: absolute; top: 0; left: 0; padding: 18px; font-size: 16px; color: #9ca3af; z-index: 1; pointer-events: none; }
-    .ghost span { color: transparent; }
-
-    .btn { position: absolute; right: 8px; top: 8px; height: 44px; padding: 0 20px; border-radius: 8px; border: none; background: #A3E635; color: #111; font-weight: 600; cursor: pointer; z-index: 3; }
-    .btn:disabled { background: #d1d5db; cursor: not-allowed; }
-
-    .explanation { background: #f9fafb; padding: 12px; border-radius: 8px; color: #4b5563; margin-bottom: 16px; border-left: 4px solid #A3E635; }
-    .sql-code { background: #1f2937; color: #e5e7eb; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; margin: 12px 0; overflow-x: auto; }
+    .nav-links { display: flex; gap: 40px; font-size: 15px; font-weight: 500; }
+    .nav-links a { color: var(--text-main); text-decoration: none; cursor: pointer; }
     
-    .kpi-card { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 24px; border-radius: 12px; text-align: center; margin: 16px 0; }
-    .kpi-title { font-size: 14px; color: #166534; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .kpi-value { font-size: 40px; font-weight: bold; color: #15803d; margin-top: 8px; }
+    .btn-primary {
+      background: var(--brand-green); border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; transition: 0.2s;
+    }
+    .btn-primary:hover { background: var(--brand-green-hover); }
 
-    table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 16px; }
-    th { background: #f3f4f6; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+    /* ГЛАВНЫЙ КОНТЕЙНЕР */
+    .app-container {
+      position: relative; z-index: 10; width: calc(100% - 80px); max-width: 1400px; height: calc(100vh - 120px); margin: 20px auto; background: var(--panel-bg); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); display: flex; overflow: hidden;
+    }
+
+    /* ЛЕВАЯ ПАНЕЛЬ */
+    .left-panel {
+      width: 45%; border-right: 1px solid var(--border-color); padding: 32px; display: flex; flex-direction: column; overflow-y: auto; background: #fafafa;
+    }
     
-    .chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-    .chip { padding: 6px 12px; background: #f3f4f6; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1px solid #e5e7eb; }
-    .chip:hover { background: #e5e7eb; border-color: #d1d5db; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .panel-header h2 { margin: 0; font-size: 20px; font-weight: 600; }
+    .icon-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); }
+
+    .search-wrapper { position: relative; margin-bottom: 24px; }
+    .search-input { width: 100%; padding: 16px 48px 16px 20px; border: 1px solid var(--border-color); border-radius: 12px; font-size: 15px; outline: none; background: #fff; z-index: 2; position: relative; }
+    .search-input:focus { border-color: var(--brand-green); box-shadow: 0 0 0 3px rgba(157, 241, 35, 0.2); }
+    .search-icon { position: absolute; right: 16px; top: 16px; color: var(--text-muted); z-index: 3; }
+    
+    .ghost-text { position: absolute; top: 16px; left: 20px; font-size: 15px; color: #9ca3af; z-index: 1; pointer-events: none; white-space: nowrap; overflow: hidden; }
+    .ghost-text span { color: transparent; }
+
+    .chips-section h3 { font-size: 16px; margin: 0 0 12px 0; font-weight: 600; }
+    .chips-container { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 32px; }
+    .chip { padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); color: var(--text-muted); transition: 0.2s; }
+    .chip.active { background: var(--brand-green); border-color: var(--brand-green); color: #000; font-weight: 500; }
+
+    .sql-block h3 { font-size: 16px; margin: 0 0 12px 0; font-weight: 600; }
+    .sql-code { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; font-family: "Courier New", Courier, monospace; font-size: 13px; line-height: 1.5; color: #374151; white-space: pre-wrap; overflow-x: auto; flex-grow: 1; }
+
+    /* ПРАВАЯ ПАНЕЛЬ */
+    .right-panel {
+      width: 55%; padding: 32px; display: flex; flex-direction: column; background: #f3f4f6; overflow-y: auto;
+    }
+    .right-title { font-size: 16px; color: var(--text-muted); margin-bottom: 16px; font-weight: 500; }
+
+    .result-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; flex-grow: 1; display: flex; flex-direction: column; }
+    
+    .result-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .result-title-group h2 { margin: 0 0 8px 0; font-size: 20px; }
+    .badge { background: var(--brand-green); color: #000; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block; }
+    .result-type { font-weight: 600; color: #000; }
+
+    .data-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; flex-grow: 1; min-height: 250px; }
+    .chart-container { position: relative; width: 100%; height: 100%; min-height: 200px; }
+    
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
+    th { background: #f9fafb; padding: 12px 8px; font-weight: 600; border-bottom: 2px solid #e5e7eb; color: var(--text-muted); }
+    td { padding: 12px 8px; border-bottom: 1px solid #f3f4f6; }
+    
+    .status-banner { background: #fff; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .status-icon { width: 24px; height: 24px; background: var(--brand-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+
+    .actions-footer { display: flex; justify-content: flex-end; gap: 24px; margin-top: auto; padding-top: 16px; }
+    .action-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; color: var(--text-main); font-weight: 500; font-size: 14px; cursor: pointer; opacity: 0.8; transition: 0.2s; }
+    .action-btn:hover { opacity: 1; color: #000; }
+    .action-btn svg { width: 18px; height: 18px; }
+
+    .loader { margin: auto; text-align: center; color: var(--text-muted); font-size: 18px; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-green); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
   </style>
 </head>
 <body>
@@ -52,85 +133,84 @@
 const { useState, useRef, useEffect } = React;
 const API = "http://localhost:8000";
 
-function ChartOrKPI({ chartType, columns, rows, comparison }) {
+// Иконки SVG
+const SearchIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>;
+const MenuIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" width="24" height="24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>;
+const SaveIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>;
+const MailIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>;
+const ShareIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>;
+const CheckIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" width="14" height="14"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>;
+
+function ChartView({ columns, rows }) {
   const canvasRef = useRef(null);
-
-  if (columns.length === 1 && rows.length === 1) {
-    return (
-      <div className="kpi-card">
-        <div className="kpi-title">{columns[0]}</div>
-        <div className="kpi-value">{rows[0][0]}</div>
-      </div>
-    );
-  }
-
-  const isTimeSeries = columns[0].toLowerCase().includes("date");
-
-  const resolvedType = chartType === "table"
-    ? "table"
-    : isTimeSeries ? "line" : "bar";
-
-  if (resolvedType === "table" || rows.length > 50) {
-    return (
-      <table>
-        <thead><tr>{columns.map(c => <th key={c}>{c}</th>)}</tr></thead>
-        <tbody>
-          {rows.slice(0, 20).map((r, i) => (
-            <tr key={i}>
-              {r.map((v, j) => <td key={j}>{v}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  }
-
+  
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !rows || rows.length === 0) return;
+
+    // Пытаемся найти текстовую колонку для X и числовую для Y
+    let labelColIdx = 0;
+    let dataColIdx = 1;
+    
+    // Если колонок больше одной, выбираем логично
+    if (columns.length > 1) {
+      dataColIdx = columns.findIndex((c, i) => i !== 0 && typeof rows[0][i] === 'number');
+      if (dataColIdx === -1) dataColIdx = 1; // fallback
+    }
+
+    const labels = rows.map(r => r[labelColIdx]);
+    const dataValues = rows.map(r => Number(r[dataColIdx]) || 0);
 
     const chart = new Chart(canvasRef.current, {
-      type: resolvedType,
+      type: 'bar', // По дизайну это столбчатая диаграмма
       data: {
-        labels: rows.map(r => r[0]),
-        datasets: [
-          {
-            label: columns[1],
-            data: rows.map(r => Number(r[1]) || 0),
-            backgroundColor: '#A3E635'
+        labels: labels.slice(0, 10), // Ограничим для красоты на дашборде
+        datasets:[{
+          data: dataValues.slice(0, 10),
+          backgroundColor: '#4f46e5', // Синий цвет колонок как на картинке
+          borderRadius: 4,
+          barPercentage: 0.6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            grid: { display: true, color: '#f3f4f6' },
+            border: { display: false }
           },
-          comparison && columns.includes("delta") && {
-            label: "Δ",
-            data: rows.map(r => Number(r[columns.indexOf("delta")]) || 0),
-            backgroundColor: '#f59e0b'
+          x: { 
+            grid: { display: false },
+            border: { display: false }
           }
-        ].filter(Boolean)
+        }
       }
     });
 
     return () => chart.destroy();
-  }, [rows, columns, comparison]);
+  }, [rows, columns]);
 
-  return <canvas ref={canvasRef} style={{marginTop: 20}} />;
+  return <div className="chart-container"><canvas ref={canvasRef} /></div>;
 }
-  
+
 function App() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const[input, setInput] = useState("");
   const [ghost, setGhost] = useState("");
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null); // { question, sql, explanation, data: { columns, rows } }
+  
+  // Дефолтное состояние для макета
+  const[activeChip, setActiveChip] = useState("Отмены по городам");
 
   const fetchGhost = async (text) => {
-    if (text.length < 3) {
-      setGhost("");
-      return;
-    }
+    if (text.length < 3) { setGhost(""); return; }
     try {
       const res = await fetch(`${API}/suggest/ghost`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prefix: text })
       });
-
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let streamTxt = "";
@@ -138,28 +218,17 @@ function App() {
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value);
-        // SSE формат присылает строки вида "data: {...}\n\n"
         const lines = chunk.split("\n");
-        
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const jsonStr = line.replace("data: ", "").trim();
             if (jsonStr === "[DONE]") break;
-            try {
-              const data = JSON.parse(jsonStr);
-              streamTxt += data.text;
-              setGhost(streamTxt);
-            } catch (e) {
-              // Игнорируем неполные JSON чанки
-            }
+            try { streamTxt += JSON.parse(jsonStr).text; setGhost(streamTxt); } catch (e) {}
           }
         }
       }
-    } catch (err) {
-      console.error("Ghost error:", err);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -169,62 +238,169 @@ function App() {
 
   const ask = async (q) => {
     if (!q) return;
-    setMessages(m =>[...m, {role: "user", content: q}]);
-    setInput(""); setGhost(""); setLoading(true);
+    setInput(q);
+    setGhost(""); 
+    setLoading(true);
+    setResult(null);
     try {
       const r = await fetch(`${API}/query`, {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({question: q})
       });
       const data = await r.json();
-      setMessages(m => [...m, {role: "bot", data}]);
+      setResult(data);
     } catch (e) {
-      setMessages(m =>[...m, {role: "bot", data: {error: "error", message: e.message}}]);
+      setResult({ error: true, message: e.message });
     }
     setLoading(false);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Tab' && ghost) { 
+      e.preventDefault(); 
+      setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); 
+      setGhost(""); 
+    }
+    if (e.key === 'Enter') { 
+      e.preventDefault(); 
+      ask(input); 
+    }
+  };
+
   return (
-    <div className="app">
-      <div className="header">Driv<span>ee</span> Analytics</div>
-      
-      <div className="chat">
-        {messages.length === 0 && <div className="msg bot">Привет! Спроси меня о данных. Например: выручка по городам за последние 7 дней.</div>}
-        {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
-            {m.role === 'user' ? m.content : (
-              m.data.error ? <span style={{color:'red'}}>Ошибка: {m.data.message} <br/><br/> {m.data.sql}</span> :
-              <div>
-                <div className="explanation"><b>Понял так:</b> {m.data.explanation}</div>
-                <ChartOrKPI chartType={m.data.chart_type} columns={m.data.data.columns} rows={m.data.data.rows} comparison={m.data.comparison}/>
-                <details><summary style={{cursor:'pointer', marginTop:10, color:'#6b7280'}}>Показать SQL</summary>
-                  <div className="sql-code">{m.data.sql}</div>
-                </details>
-              </div>
-            )}
+    <>
+      {/* Декоративный фон */}
+      <div className="bg-elements">
+        <div className="bg-circle" style={{width: '600px', height: '600px', top: '-100px', right: '-100px'}}></div>
+        <div className="bg-circle" style={{width: '300px', height: '300px', bottom: '100px', left: '100px'}}></div>
+        <div className="bg-wave"></div>
+        <div className="bg-wave-2"></div>
+      </div>
+
+      <nav className="navbar">
+        <div className="logo">
+          <span className="logo-driv">driv</span><span className="logo-ee">ee</span>
+        </div>
+        <div className="nav-links">
+          <a>Аналитика</a>
+          <a>Отчеты</a>
+          <a>Настройки</a>
+          <a>Помощь</a>
+        </div>
+        <button className="btn-primary" onClick={() => {setInput(""); setResult(null);}}>Новый запрос</button>
+      </nav>
+
+      <div className="app-container">
+        {/* ЛЕВАЯ ПАНЕЛЬ */}
+        <div className="left-panel">
+          <div className="panel-header">
+            <h2>Шаблоны</h2>
+            <button className="icon-btn"><MenuIcon /></button>
           </div>
-        ))}
-        {loading && <div className="msg bot">Анализирую миллион строк... ⏳</div>}
-      </div>
 
-      <div className="input-wrap">
-        <div className="ghost"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
-        <textarea className="input-box" rows="1" value={input} 
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
-            if (e.key === 'Enter') { e.preventDefault(); ask(input); }
-          }} 
-          placeholder="Сколько отмен было вчера?" />
-        <button className="btn" disabled={loading} onClick={() => ask(input)}>Отправить</button>
-      </div>
+          <div className="search-wrapper">
+            <div className="ghost-text"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
+            <input 
+              type="text" 
+              className="search-input" 
+              placeholder="Задайте вопрос на естественном языке..." 
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <div className="search-icon"><SearchIcon /></div>
+          </div>
 
-      <div className="chips">
-        <div className="chip" onClick={()=>ask("Покажи уникальные заказы за все время")}>Уникальные заказы</div>
-        <div className="chip" onClick={()=>ask("Выручка по городам (city_id)")}>Выручка по городам</div>
-        <div className="chip" onClick={()=>ask("Доля отмен по городам")}>Доля отмен по городам</div>
+          <div className="chips-section">
+            <h3>Типовые вопросы</h3>
+            <div className="chips-container">
+              <div className={`chip ${activeChip === "Отмены по городам" ? "active" : ""}`} 
+                   onClick={() => { setActiveChip("Отмены по городам"); ask("Сравни отмены по городам"); }}>
+                Сравни отмены по городам
+              </div>
+              <div className={`chip ${activeChip === "Выручка" ? "active" : ""}`} 
+                   onClick={() => { setActiveChip("Выручка"); ask("Покажи выручку по городам за вчера"); }}>
+                Покажи выручку за вчера
+              </div>
+              <div className={`chip ${activeChip === "Тендеры" ? "active" : ""}`} 
+                   onClick={() => { setActiveChip("Тендеры"); ask("Статистика статусов тендеров"); }}>
+                Статусы тендеров
+              </div>
+            </div>
+          </div>
+
+          <div className="sql-block">
+            <h3>SQL-запрос</h3>
+            <div className="sql-code">
+              {loading ? "Генерация запроса..." : 
+               result && !result.error ? result.sql : 
+               result && result.error ? `Ошибка:\n${result.message}` :
+               "-- Задайте вопрос, чтобы увидеть SQL код\n-- База: orders (city_id, status_order...)"}
+            </div>
+          </div>
+        </div>
+
+        {/* ПРАВАЯ ПАНЕЛЬ */}
+        <div className="right-panel">
+          {loading ? (
+             <div className="loader">
+               <div className="spinner"></div>
+               Анализируем данные...
+             </div>
+          ) : result && !result.error ? (
+            <>
+              <div className="right-title">Как система поняла ваш запрос: <b>{result.explanation || result.question}</b></div>
+              
+              <div className="result-card">
+                <div className="result-header">
+                  <div className="result-title-group">
+                    <h2>График и таблица:</h2>
+                    <span className="badge">SQL-done</span>
+                  </div>
+                  <div className="result-type">Результат</div>
+                </div>
+
+                <div className="data-grid">
+                  {/* График */}
+                  <ChartView columns={result.data.columns} rows={result.data.rows} />
+                  
+                  {/* Таблица */}
+                  <div style={{overflowY: 'auto', maxHeight: '300px'}}>
+                    <table>
+                      <thead>
+                        <tr>{result.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
+                      </thead>
+                      <tbody>
+                        {result.data.rows.slice(0, 8).map((row, i) => (
+                          <tr key={i}>
+                            {row.map((cell, j) => <td key={j}>{cell}</td>)}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div className="status-banner">
+                <div className="status-icon"><CheckIcon/></div>
+                Запрос выполнен успешно
+              </div>
+
+              <div className="actions-footer">
+                <button className="action-btn"><SaveIcon/> Сохранить отчет</button>
+                <button className="action-btn"><MailIcon/> Настроить рассылку</button>
+                <button className="action-btn"><ShareIcon/> Поделиться</button>
+              </div>
+            </>
+          ) : (
+            <div style={{color: '#9ca3af', margin: 'auto', textAlign: 'center', fontSize: '18px'}}>
+              Здесь появится результат вашего запроса
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
