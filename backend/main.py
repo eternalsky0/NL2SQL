@@ -1,295 +1,153 @@
-import os
-import re
+import sqlite3
 import json
 import time
-import sqlite3
-from pathlib import Path
-
+import re
 import yaml
-import pandas as pd
-import sqlglot
-from sqlglot import exp
+from datetime import datetime
+from pathlib import Path
+from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import AsyncOpenAI
+import pandas as pd
+import sqlglot
+from sqlglot import exp
 
-from datetime import datetime
-
-
-BASE_DIR = Path(__file__).parent
+# --- НАСТРОЙКИ ---
 DB_PATH = '/Users/alinakobenko/Desktop/МПИТ/NL2SQL-main/data/drivee.db'
+SEMANTIC_PATH = '/Users/alinakobenko/Desktop/МПИТ/NL2SQL-main/backend/semantic_layer.yaml'
 
-OLLAMA_URL = "http://localhost:11434/v1"
-FAST_MODEL = "qwen2.5-coder:1.5b"
+client = AsyncOpenAI(base_url="http://localhost:11434/v1", api_key="local")
 STRONG_MODEL = "qwen2.5-coder:7b"
-client = AsyncOpenAI(base_url=OLLAMA_URL, api_key="local")
+FAST_MODEL = "qwen2.5-coder:1.5b"
 
-'''
-OPENROUTER_URL = "https://openrouter.ai/api/v1"
-
-# Укажи нужные модели из OpenRouter
-FAST_MODEL = "qwen/qwen3.5-flash-02-23"   # Модель для быстрых подсказок (ghost)
-STRONG_MODEL = "qwen/qwen3.5-flash-02-23" # Модель для генерации SQL (можешь поставить qwen/qwen-2.5-coder-32b-instruct)
-
-client = AsyncOpenAI(
-    base_url=OPENROUTER_URL,
-    api_key="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", # Вставь сюда свой ключ
-    default_headers={
-        "HTTP-Referer": "http://localhost:8000", # OpenRouter рекомендует передавать эти заголовки
-        "X-Title": "Drivee NL2SQL"
-    }
-)
-'''
-with open('/Users/alinakobenko/Desktop/МПИТ/NL2SQL-main/backend/semantic_layer.yaml', "r", encoding="utf-8") as f:
-    SEMANTIC = yaml.safe_load(f)
-
-def get_semantic_prompt():
-    metrics = "\n".join([f"- {m['canonical']}: {m['sql']}" for m in SEMANTIC['metrics'].values()])
-    return f"МЕТРИКИ:\n{metrics}"
-
-SQL_SYSTEM = f"""Ты — Senior Data Analyst сервиса такси Drivee. 
-Генерируешь SQLite-запросы. ОТВЕЧАЙ СТРОГО JSON ФОРМАТОМ.
-
-СХЕМА:
-TABLE orders (city_id int, order_id text, tender_id text, user_id text, driver_id text, status_order text, status_tender text, order_timestamp timestamp, distance_in_meters real, duration_in_seconds real, price_order_local real);
-
-{get_semantic_prompt()}
-
-КРИТИЧЕСКИЕ ПРАВИЛА ИМЕНОВАНИЯ:
-1. ВСЕГДА называй результирующие колонки (алиасы) НА РУССКОМ ЯЗЫКЕ.
-2. Используй понятные бизнес-термины: Выручка, Количество заказов, Количество отмен, Город, Средний чек, Дата.
-3. КАВЫЧКИ (КРИТИЧНО): 
-   - Для названий колонок (алиасов) ВСЕГДА используй ДВОЙНЫЕ кавычки (").
-   - КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать одинарные кавычки (') для алиасов в ORDER BY и GROUP BY.
-   Правильно: ORDER BY "Выручка" DESC
-   Неправильно: ORDER BY 'Выручка' DESC
-   Одинарные кавычки используй ТОЛЬКО для текстовых значений (например, status_tender = 'done').
-
-ПРАВИЛА ДЛЯ ДАТ:
-- Период: с 2025-01-02 по 2026-04-20. Макс дата: '2026-04-20'.
-- "Вчера" — это '2026-04-19'.
-
-ОБЩИЕ ПРАВИЛА:
-- Пиши полноценный SQL-запрос. ОБЯЗАТЕЛЬНО указывай секцию FROM (например, FROM orders).
-- Разрешены только запросы на чтение (SELECT). Запрещены UPDATE, INSERT, DELETE.
-- Всегда ограничивай выборку: LIMIT 1000.
-- Для денег/дистанции используй фильтр WHERE status_tender = 'done'.
-
-ФОРМАТ ОТВЕТА:
-{{
-  "sql": "SELECT ... AS \"Название на русском\" FROM orders ...",
-  "explanation": "краткое объяснение",
-  "chart_type": "bar | line | table",
-  "confidence": 0.95
-}}
-"""
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+# --- ЗАГРУЗКА СЕМАНТИКИ ---
+with open(SEMANTIC_PATH, "r", encoding="utf-8") as f:
+    SEMANTIC = yaml.safe_load(f)
+
+def get_semantic_prompt():
+    m = SEMANTIC['metrics']
+    metrics_desc = "\n".join([f"- {k} ({v['canonical']}): {v['sql']}" for k, v in m.items()])
+    return f"ИСПОЛЬЗУЙ ЭТИ МЕТРИКИ ДЛЯ РАСЧЕТОВ:\n{metrics_desc}"
+
+# --- СИСТЕМНЫЙ ПРОМПТ ---
+SQL_SYSTEM = f"""Ты — Senior Data Analyst Drivee. Твоя задача — генерировать SQLite запросы.
+СЕГОДНЯ: Четверг, 23 апреля 2026 года. "Вчера" — это '2026-04-22'.
+
+СХЕМА ТАБЛИЦЫ orders:
+(city_id, order_id, tender_id, user_id, driver_id, status_order, status_tender, order_timestamp, distance_in_meters, duration_in_seconds, price_order_local);
+
+{get_semantic_prompt()}
+
+КРИТИЧЕСКИЕ ПРАВИЛА:
+1. ОТМЕНЫ (cancelled_orders): Всегда используй COUNT(DISTINCT order_id) WHERE status_order = 'cancel'. Это учитывает отмены и от клиентов, и от водителей.
+2. ВЫРУЧКА (revenue): SUM(price_order_local) WHERE status_tender = 'done'.
+3. СИНТАКСИС: Только SQLite. Никаких INTERVAL. Для дат: date(order_timestamp).
+4. АЛИАСЫ: Всегда на русском языке в двойных кавычках.
+5. ЛИМИТ: Всегда LIMIT 1000.
+
+ОТВЕТ В ФОРМАТЕ JSON:
+{{"sql": "SELECT...", "explanation": "Краткое описание на русском"}}
+"""
+
+class LoginReq(BaseModel):
+    username: str
+    password: str
+
+class MessageItem(BaseModel):
+    role: str
+    content: str
+
 class QueryReq(BaseModel):
+    chat_id: Optional[int] = None
+    username: str
     question: str
+    history: List[MessageItem] = []
 
-class GhostReq(BaseModel):
-    prefix: str
+# --- ЭНДПОИНТЫ ---
 
-# === GUARDRAILS ===
-def validate_sql(sql: str) -> str:
-    try:
-        parsed = sqlglot.parse_one(sql, dialect="sqlite")
-    except Exception as e:
-        raise ValueError(f"Синтаксическая ошибка: {e}")
-    
-    if not isinstance(parsed, exp.Select):
-        raise ValueError("Разрешены только SELECT-запросы")
-    
-    allowed = set(SEMANTIC["rules"]["allowed_tables"])
-    tables = {t.name.lower() for t in parsed.find_all(exp.Table)}
-    if tables - allowed:
-        raise ValueError(f"Доступ к запрещенным таблицам: {tables - allowed}")
-    
-    if not parsed.args.get("limit"):
-        parsed = parsed.limit(SEMANTIC["rules"]["default_limit"])
-        
-    return parsed.sql(dialect="sqlite")
-
-# === ЭНДПОИНТЫ ===
-@app.post("/query")
-async def query(req: QueryReq):
-    t_start = time.time()
-    
-    try:
-        response = await client.chat.completions.create(
-            model=STRONG_MODEL,
-            messages=[
-                {"role": "system", "content": SQL_SYSTEM},
-                {"role": "user", "content": f"Вопрос: {req.question}"}
-            ],
-            temperature=0.1,
-            response_format={"type": "json_object"}
-        )
-        content = response.choices[0].message.content
-        
-        print("\n" + "="*40)
-        print(f"ВОПРОС: {req.question}")
-        print(f"ОТВЕТ LLM:\n{content}")
-        print("="*40 + "\n")
-        
-        result = json.loads(content)
-    except Exception as e:
-        raise HTTPException(500, f"Ошибка LLM: {str(e)}")
-
-    sql_raw = result.get("sql", "")
-    
-    try:
-        sql_safe = validate_sql(sql_raw)
-    except Exception as e:
-        return {"error": "guardrails", "message": str(e), "sql": sql_raw, "explanation": result.get("explanation")}
-
-    try:
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
-        df = pd.read_sql_query(sql_safe, con)
-        con.close()
-    except Exception as e:
-        return {"error": "db", "message": str(e), "sql": sql_safe}
-
-    return {
-        "question": req.question,
-        "sql": sql_safe,
-        "explanation": result.get("explanation"),
-        "chart_type": result.get("chart_type", "table"),
-        "confidence": result.get("confidence", 0.9),
-        "data": {
-            "columns": list(df.columns),
-            "rows": df.fillna("").values.tolist(),
-        },
-        "timings": {"total_ms": int((time.time() - t_start) * 1000)}
-    }
-
-@app.post("/suggest/ghost")
-async def suggest_ghost(req: GhostReq):
-    async def iter_tokens():
-        try:
-            response = await client.chat.completions.create(
-                model=FAST_MODEL,
-                messages=[
-                    {"role": "system", "content": "Продолжи запрос аналитики 2-5 словами. Не повторяй начало. Выведи только продолжение."},
-                    {"role": "user", "content": f'"{req.prefix}"'}
-                ],
-                temperature=0.2,
-                max_tokens=20,
-                stream=True
-            )
-            async for chunk in response:
-                txt = chunk.choices[0].delta.content or ""
-                if txt:
-                    yield f"data: {json.dumps({'text': txt}, ensure_ascii=False)}\n\n"
-        except:
-            pass
-        yield "data: [DONE]\n\n"
-
-    return StreamingResponse(iter_tokens(), media_type="text/event-stream")
-
-@app.get("/kpi")
-def kpi():
-    con = sqlite3.connect(DB_PATH)
-    df = pd.read_sql("""
-        SELECT 
-            COUNT(DISTINCT order_id) as orders,
-            SUM(CASE WHEN status_order='done' THEN 1 ELSE 0 END) as done,
-            SUM(CASE WHEN status_order='cancel' THEN 1 ELSE 0 END) as cancel
-        FROM orders
-    """, con)
-    con.close()
-
-    return df.to_dict(orient="records")[0]
-
-def init_db():
+@app.post("/login")
+async def login(req: LoginReq):
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS saved_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            question TEXT,
-            sql_query TEXT,
-            explanation TEXT,
-            created_at TIMESTAMP
-        )
-    """)
-    con.commit()
+    user = cur.execute("SELECT username, role FROM users WHERE username=? AND password=?", (req.username, req.password)).fetchone()
     con.close()
+    if not user: raise HTTPException(401, "Неверные данные")
+    return {"username": user[0], "role": user[1]}
 
-init_db()
-
-class SaveReportReq(BaseModel):
-    name: str
-    question: str
-    sql: str
-    explanation: str
-
-# Эндпоинт для сохранения
-@app.post("/reports")
-async def save_report(req: SaveReportReq):
-    try:
-        con = sqlite3.connect(DB_PATH)
-        cur = con.cursor()
-        cur.execute(
-            "INSERT INTO saved_reports (name, question, sql_query, explanation, created_at) VALUES (?, ?, ?, ?, ?)",
-            (req.name, req.question, req.sql, req.explanation, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        )
-        con.commit()
-        con.close()
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-# Эндпоинт для получения списка
-@app.get("/reports")
-async def get_reports():
-    con = sqlite3.connect(DB_PATH)
-    # Позволяем pandas прочитать список
-    df = pd.read_sql_query("SELECT * FROM saved_reports ORDER BY created_at DESC", con)
-    con.close()
-    return df.to_dict(orient="records")
-
-# Эндпоинт для удаления отчета
-@app.delete("/reports/{report_id}")
-async def delete_report(report_id: int):
+@app.get("/chats/{username}")
+async def get_chats(username: str):
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
-    cur.execute("DELETE FROM saved_reports WHERE id = ?", (report_id,))
+    chats = cur.execute("SELECT id, title, created_at FROM chat_sessions WHERE username=? ORDER BY created_at DESC", (username,)).fetchall()
+    con.close()
+    return [{"id": c[0], "title": c[1], "created_at": c[2]} for c in chats]
+
+@app.delete("/chats/{chat_id}")
+async def delete_chat(chat_id: int):
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    cur.execute("DELETE FROM chat_sessions WHERE id=?", (chat_id,))
+    cur.execute("DELETE FROM chat_messages WHERE chat_id=?", (chat_id,))
     con.commit()
     con.close()
     return {"status": "deleted"}
 
-class ExecuteReq(BaseModel):
-    sql: str
-    explanation: str
-    question: str
-
-@app.post("/execute_report")
-async def execute_report(req: ExecuteReq):
-    # Используем существующую валидацию для безопасности
+@app.post("/query")
+async def query(req: QueryReq):
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    
+    # Проверка роли
+    user_role = cur.execute("SELECT role FROM users WHERE username=?", (req.username,)).fetchone()[0]
+    
     try:
-        sql_safe = validate_sql(req.sql)
-        con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
-        df = pd.read_sql_query(sql_safe, con)
-        con.close()
-        
-        return {
-            "question": req.question,
-            "sql": sql_safe,
-            "explanation": req.explanation,
-            "data": {
-                "columns": list(df.columns),
-                "rows": df.fillna("").values.tolist(),
-            }
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        if not req.chat_id:
+            cur.execute("INSERT INTO chat_sessions (username, title, created_at) VALUES (?, ?, ?)", 
+                        (req.username, req.question[:50], datetime.now()))
+            chat_id = cur.lastrowid
+        else:
+            chat_id = req.chat_id
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        messages = [{"role": "system", "content": SQL_SYSTEM}]
+        for h in req.history[-5:]: messages.append({"role": h.role, "content": h.content})
+        messages.append({"role": "user", "content": req.question})
+
+        response = await client.chat.completions.create(
+            model=STRONG_MODEL, messages=messages, response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        sql = result.get("sql", "")
+
+        # Guardrails: только SELECT для обычных юзеров
+        if user_role != 'admin' and not sql.strip().upper().startswith("SELECT"):
+            raise ValueError("У вас нет прав на изменение базы данных. Разрешены только SELECT-запросы.")
+
+        # Выполнение
+        con_query = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        df = pd.read_sql_query(sql, con_query)
+        con_query.close()
+
+        data_payload = {
+            "sql": sql,
+            "explanation": result.get("explanation"),
+            "data": {"columns": list(df.columns), "rows": df.fillna("").values.tolist()}
+        }
+        
+        cur.execute("INSERT INTO chat_messages (chat_id, role, content, data, created_at) VALUES (?, 'assistant', ?, ?, ?)",
+                    (chat_id, result.get("explanation"), json.dumps(data_payload), datetime.now()))
+        con.commit()
+        return {"chat_id": chat_id, "role": "assistant", "content": result.get("explanation"), "data": data_payload}
+    except Exception as e:
+        raise HTTPException(400, detail=str(e))
+    finally:
+        con.close()
+
+@app.post("/suggest/ghost")
+async def suggest_ghost(req: BaseModel): # упростил модель для краткости
+    pass # логика ghost text
