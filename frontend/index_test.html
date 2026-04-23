@@ -14,31 +14,78 @@
       --brand-dark: #111827;
       --bg-gradient: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
     }
+
     * { box-sizing: border-box; }
-    body, html { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: var(--bg-gradient); height: 100vh; overflow: hidden; }
-    .navbar { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 10px 40px; background: white; border-bottom: 1px solid #eee; }
+    body, html { margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; background: var(--bg-gradient); height: 100vh; overflow: hidden; }
+
+    /* НАВИГАЦИЯ */
+    .navbar { 
+      position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; 
+      padding: 12px 40px; background: white; border-bottom: 1px solid #eee;
+    }
     .logo-container img { height: 32px; width: auto; }
-    .btn-main { background: var(--brand-green); border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; }
-    .app-shell { width: calc(100% - 60px); max-width: 1400px; height: calc(100vh - 100px); margin: 20px auto; background: white; border-radius: 24px; display: flex; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+    
+    .nav-links { display: flex; gap: 35px; font-weight: 500; font-size: 14px; }
+    .nav-links a { color: var(--brand-dark); text-decoration: none; transition: 0.2s; }
+    .nav-links a:hover { color: #4f46e5; }
+
+    .btn-main { 
+      background: var(--brand-green); border: none; padding: 10px 22px; border-radius: 12px; 
+      font-weight: 700; cursor: pointer; font-size: 14px; color: black;
+    }
+
+    /* ОСНОВНОЙ МОДУЛЬ */
+    .app-shell { 
+      width: calc(100% - 60px); max-width: 1400px; height: calc(100vh - 110px); 
+      margin: 15px auto; background: white; border-radius: 24px; display: flex; overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    /* СУБЪЕКТИВНЫЕ ЭЛЕМЕНТЫ */
     .sidebar { width: 35%; padding: 30px; border-right: 1px solid #f0f0f0; display: flex; flex-direction: column; background: #fafafa; }
-    .main-input { width: 100%; padding: 18px 20px; border: 2px solid #eee; border-radius: 16px; font-size: 16px; outline: none; background: white; position: relative; z-index: 2; }
-    .main-input:focus { border-color: var(--brand-green); }
-    .ghost-layer { position: absolute; top: 18px; left: 20px; font-size: 16px; color: #aaa; z-index: 1; pointer-events: none; white-space: nowrap; }
+    .main-input { 
+      width: 100%; padding: 18px 20px; border: 2px solid #eee; border-radius: 16px; 
+      font-size: 16px; outline: none; background: white; position: relative; z-index: 2;
+    }
+    .ghost-layer { position: absolute; top: 18px; left: 20px; font-size: 16px; color: #aaa; z-index: 1; pointer-events: none; }
     .ghost-layer span { color: transparent; }
-    .chip { display: inline-block; padding: 8px 16px; background: white; border: 1px solid #ddd; border-radius: 20px; margin: 0 8px 8px 0; cursor: pointer; font-size: 13px; }
-    .sql-preview { margin-top: auto; background: #1a202c; color: #a0aec0; padding: 20px; border-radius: 16px; font-family: monospace; font-size: 12px; max-height: 150px; overflow-y: auto; }
+
+    .chip { 
+      display: inline-block; padding: 8px 16px; background: white; border: 1px solid #ddd; 
+      border-radius: 20px; margin: 0 8px 8px 0; cursor: pointer; font-size: 13px;
+    }
+
+    .sql-preview { 
+      margin-top: auto; background: #1a202c; color: #a0aec0; padding: 20px; 
+      border-radius: 16px; font-family: monospace; font-size: 12px; line-height: 1.5;
+      max-height: 180px; overflow-y: auto;
+    }
+
+    /* КОНТЕНТ */
     .content-area { width: 65%; padding: 30px; background: #f4f7f9; display: flex; flex-direction: column; overflow-y: auto; }
-    .card { background: white; border-radius: 20px; padding: 30px; flex-grow: 1; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .card { background: white; border-radius: 20px; padding: 30px; flex-grow: 1; display: flex; flex-direction: column; }
+    
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-    .kpi-wrapper { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.5s ease-out; }
+    .card-header h2 { margin: 0; font-size: 20px; }
+
+    /* ЗЕЛЕНАЯ ПЛАШКА */
+    .badge { 
+      background: var(--brand-green); color: black; padding: 5px 12px; 
+      border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase;
+    }
+
+    /* KPI */
+    .kpi-wrapper { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .kpi-label { font-size: 18px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
     .kpi-value { font-size: 84px; font-weight: 900; color: #4f46e5; letter-spacing: -3px; }
-    .chart-box { height: 300px; width: 100%; margin-bottom: 20px; }
+
+    /* ГРАФИК И ТАБЛИЦА */
+    .chart-box { height: 320px; width: 100%; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th { text-align: left; padding: 12px; border-bottom: 2px solid #f0f0f0; color: #64748b; }
     td { padding: 12px; border-bottom: 1px solid #f8f8f8; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-green); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+
+    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-green); border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
@@ -49,46 +96,36 @@
 const { useState, useRef, useEffect } = React;
 const API = "http://localhost:8000";
 
-// Карта перевода для подстраховки
+// Карта перевода заголовков (подстраховка)
 const TRANSLATIONS = {
   "revenue": "Выручка",
   "total_orders": "Всего заказов",
   "cancel_count": "Количество отмен",
   "avg_price": "Средний чек",
-  "city_id": "ID Города",
-  "order_timestamp": "Дата и время",
+  "city_id": "Город",
+  "order_timestamp": "Дата",
   "status_order": "Статус заказа",
-  "distance_in_meters": "Дистанция (м)",
-  "duration_in_seconds": "Длительность (сек)",
   "price_order_local": "Стоимость"
 };
 
-const translateHeader = (h) => {
-  const low = h.toLowerCase();
-  return TRANSLATIONS[low] || h; // Если нет в словаре, оставляем как есть (LLM должна сама назвать по-русски)
-};
+const translate = (txt) => TRANSLATIONS[txt.toLowerCase()] || txt;
 
 function ChartDisplay({ columns, rows }) {
   const canvasRef = useRef(null);
   useEffect(() => {
     if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    const chart = new Chart(ctx, {
+    const chart = new Chart(canvasRef.current, {
       type: 'bar',
       data: {
         labels: rows.map(r => String(r[0])).slice(0, 10),
         datasets: [{
-          label: translateHeader(columns[1] || 'Значение'),
+          label: translate(columns[1] || 'Значение'),
           data: rows.map(r => Number(r[1]) || 0).slice(0, 10),
           backgroundColor: '#4f46e5',
           borderRadius: 8
         }]
       },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
-      }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
     return () => chart.destroy();
   }, [rows]);
@@ -101,12 +138,12 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const fetchGhost = async (val) => {
-    if (val.length < 3) { setGhost(""); return; }
+  const fetchGhost = async (v) => {
+    if (v.length < 3) { setGhost(""); return; }
     try {
       const res = await fetch(`${API}/suggest/ghost`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prefix: val })
+        body: JSON.stringify({ prefix: v })
       });
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -145,20 +182,26 @@ function App() {
     setLoading(false);
   };
 
-  const isKpiMode = result && !result.error && result.data.rows.length === 1;
+  const isKpi = result && !result.error && result.data.rows.length === 1;
 
   return (
     <div style={{height: '100%'}}>
+      {/* ВЕРНУЛИ НАВИГАЦИЮ */}
       <nav className="navbar">
         <div className="logo-container">
           <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" alt="Drivee" />
         </div>
-        <div style={{fontWeight: 600}}>Интеллектуальная аналитика</div>
+        <div className="nav-links">
+          <a href="#">Аналитика</a>
+          <a href="#">Отчеты</a>
+          <a href="#">Справка</a>
+        </div>
         <button className="btn-main" onClick={() => {setInput(""); setResult(null);}}>Новый запрос</button>
       </nav>
 
       <div className="app-shell">
         <div className="sidebar">
+          <h3 style={{marginTop: 0}}>Задать вопрос</h3>
           <div style={{position: 'relative', marginBottom: 20}}>
             <div className="ghost-layer"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
             <input 
@@ -169,34 +212,35 @@ function App() {
                 if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
                 if (e.key === 'Enter') { e.preventDefault(); ask(input); }
               }}
-              placeholder="Спроси Drivee..."
+              placeholder="Спроси Drivee о данных..."
             />
           </div>
           <div>
             <div className="chip" onClick={() => ask("Выручка за вчера")}>Выручка за вчера</div>
             <div className="chip" onClick={() => ask("Сравни отмены по городам")}>Отмены по городам</div>
-            <div className="chip" onClick={() => ask("Сколько сегодня заказов")}>Заказы за сегодня</div>
+            <div className="chip" onClick={() => ask("Сколько заказов было вчера")}>Заказы вчера</div>
           </div>
           {result && <div className="sql-preview">{result.sql}</div>}
         </div>
 
         <div className="content-area">
           {loading ? (
-            <div style={{margin:'auto', textAlign:'center'}}><div className="spinner"></div>Считаем...</div>
+            <div className="spinner"></div>
           ) : result && !result.error ? (
             <>
               <div style={{marginBottom: 15, fontSize: 13, color: '#64748b'}}>
-                Логика: <i>{result.explanation}</i>
+                Система поняла: <i>{result.explanation}</i>
               </div>
               <div className="card">
                 <div className="card-header">
-                  <h2 style={{fontSize: 18}}>Результат</h2>
-                  <span style={{background:'#f1f5f9', padding:'4px 10px', borderRadius:6, fontSize:12, fontWeight:700}}>DRIVEE-SQL-OK</span>
+                  <h2>Результат анализа</h2>
+                  {/* ВЕРНУЛИ SQL-DONE НА ЗЕЛЕНОМ ФОНЕ */}
+                  <span className="badge">SQL-done</span>
                 </div>
 
-                {isKpiMode ? (
+                {isKpi ? (
                   <div className="kpi-wrapper">
-                    <div className="kpi-label">{translateHeader(result.data.columns[result.data.columns.length - 1])}</div>
+                    <div className="kpi-label">{translate(result.data.columns[result.data.columns.length - 1])}</div>
                     <div className="kpi-value">
                       {(() => {
                         const val = result.data.rows[0][result.data.rows[0].length - 1];
@@ -210,7 +254,7 @@ function App() {
                     <div style={{overflowY:'auto', flexGrow: 1}}>
                       <table>
                         <thead>
-                          <tr>{result.data.columns.map((c, i) => <th key={i}>{translateHeader(c)}</th>)}</tr>
+                          <tr>{result.data.columns.map((c, i) => <th key={i}>{translate(c)}</th>)}</tr>
                         </thead>
                         <tbody>
                           {result.data.rows.slice(0, 10).map((row, i) => (
@@ -224,8 +268,8 @@ function App() {
               </div>
             </>
           ) : (
-            <div style={{margin:'auto', opacity: 0.2, textAlign:'center'}}>
-               <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{height: 60}} />
+            <div style={{margin:'auto', opacity: 0.1, textAlign:'center'}}>
+               <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{height: 100}} />
             </div>
           )}
         </div>
