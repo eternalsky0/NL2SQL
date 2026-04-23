@@ -20,70 +20,82 @@
 
     /* НАВИГАЦИЯ */
     .navbar { 
-      position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; 
+      position: relative; z-index: 100; display: flex; align-items: center; justify-content: space-between; 
       padding: 12px 40px; background: white; border-bottom: 1px solid #eee;
     }
     .logo-container img { height: 32px; width: auto; }
-    
     .nav-links { display: flex; gap: 35px; font-weight: 500; font-size: 14px; }
-    .nav-links a { color: var(--brand-dark); text-decoration: none; transition: 0.2s; }
-    .nav-links a:hover { color: #4f46e5; }
+    .nav-links a { color: var(--brand-dark); text-decoration: none; }
+    .btn-main { background: var(--brand-green); border: none; padding: 10px 22px; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
-    .btn-main { 
-      background: var(--brand-green); border: none; padding: 10px 22px; border-radius: 12px; 
-      font-weight: 700; cursor: pointer; font-size: 14px; color: black;
-    }
-
-    /* ОСНОВНОЙ МОДУЛЬ */
+    /* ГЛАВНЫЙ КОНТЕЙНЕР */
     .app-shell { 
       width: calc(100% - 60px); max-width: 1400px; height: calc(100vh - 110px); 
       margin: 15px auto; background: white; border-radius: 24px; display: flex; overflow: hidden;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
 
-    /* СУБЪЕКТИВНЫЕ ЭЛЕМЕНТЫ */
+    /* ЛЕВАЯ ПАНЕЛЬ */
     .sidebar { width: 35%; padding: 30px; border-right: 1px solid #f0f0f0; display: flex; flex-direction: column; background: #fafafa; }
-    .main-input { 
-      width: 100%; padding: 18px 20px; border: 2px solid #eee; border-radius: 16px; 
-      font-size: 16px; outline: none; background: white; position: relative; z-index: 2;
-    }
-    .ghost-layer { position: absolute; top: 18px; left: 20px; font-size: 16px; color: #aaa; z-index: 1; pointer-events: none; }
-    .ghost-layer span { color: transparent; }
+    .main-input { width: 100%; padding: 18px 20px; border: 2px solid #eee; border-radius: 16px; font-size: 16px; outline: none; background: white; }
+    .chip { display: inline-block; padding: 8px 16px; background: white; border: 1px solid #ddd; border-radius: 20px; margin: 0 8px 8px 0; cursor: pointer; font-size: 13px; }
+    .sql-preview { margin-top: auto; background: #1a202c; color: #a0aec0; padding: 20px; border-radius: 16px; font-family: monospace; font-size: 11px; max-height: 180px; overflow-y: auto; }
 
-    .chip { 
-      display: inline-block; padding: 8px 16px; background: white; border: 1px solid #ddd; 
-      border-radius: 20px; margin: 0 8px 8px 0; cursor: pointer; font-size: 13px;
-    }
-
-    .sql-preview { 
-      margin-top: auto; background: #1a202c; color: #a0aec0; padding: 20px; 
-      border-radius: 16px; font-family: monospace; font-size: 12px; line-height: 1.5;
-      max-height: 180px; overflow-y: auto;
+    /* ПРАВАЯ ПАНЕЛЬ (ОБНОВЛЕННЫЙ СКРОЛЛ) */
+    .content-area { 
+      width: 65%; 
+      background: #f4f7f9; 
+      overflow-y: auto; /* Скроллится вся правая часть */
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
-    /* КОНТЕНТ */
-    .content-area { width: 65%; padding: 30px; background: #f4f7f9; display: flex; flex-direction: column; overflow-y: auto; }
-    .card { background: white; border-radius: 20px; padding: 30px; flex-grow: 1; display: flex; flex-direction: column; }
+    /* КАРТОЧКА (ОБНОВЛЕНА) */
+    .card { 
+      background: white; 
+      border-radius: 20px; 
+      padding: 30px; 
+      width: 100%;
+      min-height: min-content; /* Карточка растягивается под контент */
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
     
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-    .card-header h2 { margin: 0; font-size: 20px; }
+    .badge { background: var(--brand-green); color: black; padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; }
 
-    /* ЗЕЛЕНАЯ ПЛАШКА */
-    .badge { 
-      background: var(--brand-green); color: black; padding: 5px 12px; 
-      border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase;
+    /* ТАБЛИЦА (УБРАН ВНУТРЕННИЙ СКРОЛЛ) */
+    .table-container { width: 100%; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+    th { text-align: left; padding: 12px; border-bottom: 2px solid #f0f0f0; color: #64748b; }
+    td { padding: 12px; border-bottom: 1px solid #f8f8f8; color: #1e293b; }
+
+    /* ПЛАШКА СТАТУСА (ТЕПЕРЬ ПОСЛЕ ТАБЛИЦЫ) */
+    .status-banner { 
+      background: white; 
+      border-radius: 16px; 
+      padding: 18px 24px; 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+      font-weight: 600; 
+      color: #374151;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 10px; /* Чтобы не прилипала к самому низу */
+    }
+    .status-icon { 
+      width: 22px; height: 22px; background: var(--brand-green); 
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+      color: #000; font-size: 13px;
     }
 
     /* KPI */
-    .kpi-wrapper { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .kpi-label { font-size: 18px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .kpi-wrapper { padding: 60px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .kpi-value { font-size: 84px; font-weight: 900; color: #4f46e5; letter-spacing: -3px; }
+    .kpi-label { font-size: 18px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
 
-    /* ГРАФИК И ТАБЛИЦА */
-    .chart-box { height: 320px; width: 100%; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th { text-align: left; padding: 12px; border-bottom: 2px solid #f0f0f0; color: #64748b; }
-    td { padding: 12px; border-bottom: 1px solid #f8f8f8; }
+    .chart-box { height: 320px; width: 100%; margin-bottom: 30px; }
 
     .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-green); border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -96,19 +108,7 @@
 const { useState, useRef, useEffect } = React;
 const API = "http://localhost:8000";
 
-// Карта перевода заголовков (подстраховка)
-const TRANSLATIONS = {
-  "revenue": "Выручка",
-  "total_orders": "Всего заказов",
-  "cancel_count": "Количество отмен",
-  "avg_price": "Средний чек",
-  "city_id": "Город",
-  "order_timestamp": "Дата",
-  "status_order": "Статус заказа",
-  "price_order_local": "Стоимость"
-};
-
-const translate = (txt) => TRANSLATIONS[txt.toLowerCase()] || txt;
+const CheckIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" width="12" height="12"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>;
 
 function ChartDisplay({ columns, rows }) {
   const canvasRef = useRef(null);
@@ -117,15 +117,19 @@ function ChartDisplay({ columns, rows }) {
     const chart = new Chart(canvasRef.current, {
       type: 'bar',
       data: {
-        labels: rows.map(r => String(r[0])).slice(0, 10),
+        labels: rows.map(r => String(r[0])).slice(0, 15),
         datasets: [{
-          label: translate(columns[1] || 'Значение'),
-          data: rows.map(r => Number(r[1]) || 0).slice(0, 10),
+          data: rows.map(r => Number(r[1]) || 0).slice(0, 15),
           backgroundColor: '#4f46e5',
           borderRadius: 8
         }]
       },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      options: { 
+        responsive: true, 
+        maintainAspectRatio: false, 
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } } }
+      }
     });
     return () => chart.destroy();
   }, [rows]);
@@ -151,12 +155,13 @@ function App() {
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-        const lines = decoder.decode(value).split("\n");
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
         for (const line of lines) {
           if (line.startsWith("data: ")) {
-            const chunk = line.replace("data: ", "").trim();
-            if (chunk === "[DONE]") break;
-            try { streamTxt += JSON.parse(chunk).text; setGhost(streamTxt); } catch(e){}
+            const data = JSON.parse(line.replace("data: ", "").trim());
+            if (data === "[DONE]") break;
+            streamTxt += data.text; setGhost(streamTxt);
           }
         }
       }
@@ -186,7 +191,6 @@ function App() {
 
   return (
     <div style={{height: '100%'}}>
-      {/* ВЕРНУЛИ НАВИГАЦИЮ */}
       <nav className="navbar">
         <div className="logo-container">
           <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" alt="Drivee" />
@@ -201,25 +205,18 @@ function App() {
 
       <div className="app-shell">
         <div className="sidebar">
-          <h3 style={{marginTop: 0}}>Задать вопрос</h3>
+          <h3 style={{marginTop: 0}}>Ваш вопрос</h3>
           <div style={{position: 'relative', marginBottom: 20}}>
-            <div className="ghost-layer"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
             <input 
               className="main-input" 
               value={input} 
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
-                if (e.key === 'Enter') { e.preventDefault(); ask(input); }
-              }}
-              placeholder="Спроси Drivee о данных..."
+              onKeyDown={e => e.key === 'Enter' && ask(input)}
+              placeholder="Спроси Drivee..."
             />
           </div>
-          <div>
-            <div className="chip" onClick={() => ask("Выручка за вчера")}>Выручка за вчера</div>
-            <div className="chip" onClick={() => ask("Сравни отмены по городам")}>Отмены по городам</div>
-            <div className="chip" onClick={() => ask("Сколько заказов было вчера")}>Заказы вчера</div>
-          </div>
+          <div className="chip" onClick={() => ask("Выручка по водителям за вчера")}>Выручка по водителям</div>
+          <div className="chip" onClick={() => ask("Сравни отмены по городам")}>Отмены по городам</div>
           {result && <div className="sql-preview">{result.sql}</div>}
         </div>
 
@@ -228,48 +225,48 @@ function App() {
             <div className="spinner"></div>
           ) : result && !result.error ? (
             <>
-              <div style={{marginBottom: 15, fontSize: 13, color: '#64748b'}}>
-                Система поняла: <i>{result.explanation}</i>
+              <div style={{color: '#64748b', fontSize: 13}}>
+                Понял как: <b>{result.explanation}</b>
               </div>
+              
+              {/* БЕЛАЯ КАРТОЧКА: ТЕПЕРЬ ОНА РАСТЯГИВАЕТСЯ */}
               <div className="card">
                 <div className="card-header">
                   <h2>Результат анализа</h2>
-                  {/* ВЕРНУЛИ SQL-DONE НА ЗЕЛЕНОМ ФОНЕ */}
                   <span className="badge">SQL-done</span>
                 </div>
 
                 {isKpi ? (
                   <div className="kpi-wrapper">
-                    <div className="kpi-label">{translate(result.data.columns[result.data.columns.length - 1])}</div>
-                    <div className="kpi-value">
-                      {(() => {
-                        const val = result.data.rows[0][result.data.rows[0].length - 1];
-                        return typeof val === 'number' ? val.toLocaleString('ru-RU') : val;
-                      })()}
-                    </div>
+                    <div className="kpi-label">{result.data.columns[0]}</div>
+                    <div className="kpi-value">{result.data.rows[0][0].toLocaleString('ru-RU')}</div>
                   </div>
                 ) : (
-                  <div style={{display:'flex', flexDirection:'column', height:'100%'}}>
+                  <div className="table-container">
                     <ChartDisplay columns={result.data.columns} rows={result.data.rows} />
-                    <div style={{overflowY:'auto', flexGrow: 1}}>
-                      <table>
-                        <thead>
-                          <tr>{result.data.columns.map((c, i) => <th key={i}>{translate(c)}</th>)}</tr>
-                        </thead>
-                        <tbody>
-                          {result.data.rows.slice(0, 10).map((row, i) => (
-                            <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <table>
+                      <thead>
+                        <tr>{result.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
+                      </thead>
+                      <tbody>
+                        {result.data.rows.map((row, i) => (
+                          <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
+              </div>
+
+              {/* ПЛАШКА: ТЕПЕРЬ ОНА ПРОСТО ИДЕТ СЛЕДОМ ЗА КАРТОЧКОЙ */}
+              <div className="status-banner">
+                <div className="status-icon"><CheckIcon/></div>
+                Данные успешно загружены из базы Drivee
               </div>
             </>
           ) : (
             <div style={{margin:'auto', opacity: 0.1, textAlign:'center'}}>
-               <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{height: 100}} />
+               <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{height: 80}} />
             </div>
           )}
         </div>
