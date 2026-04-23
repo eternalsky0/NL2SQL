@@ -3,11 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Drivee Analytics</title>
-  <link rel="icon" type="image/x-icon" href="https://drivee.com/favicon.ico">
-  <!-- Подключаем шрифт Noto Sans, который является системным для Drivee -->
+  <title>Drivee Analytics Platform</title>
+  <link rel="icon" href="https://logo-teka.com/wp-content/uploads/2026/02/drivee-icon-logo.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
@@ -15,106 +13,133 @@
   
   <style>
     :root {
-      /* Точные цвета с сайта Drivee */
       --brand-green: #96ea28;
       --brand-green-hover: #7ac517;
-      --bg-main: #f5f6f8; /* Мягкий серый фон как на сайте */
-      --text-main: #1e1e1e; /* Темно-графитовый текст */
-      --text-muted: #888888;
+      --bg-main: #f5f6f8;
+      --text-main: #1e1e1e;
+      --text-muted: #8e8e93;
       --border-color: #ebebeb;
-      --panel-bg: #ffffff;
+      --sidebar-width: 260px;
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; font-family: 'Noto Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    body, html { margin: 0; padding: 0; background: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+    /* LOGIN */
+    .login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; background: var(--bg-main); }
+    .login-card { background: #fff; padding: 48px; border-radius: 32px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); text-align: center; }
+    .login-input { width: 100%; padding: 16px; margin-bottom: 12px; border: 1.5px solid var(--border-color); border-radius: 14px; font-size: 15px; outline: none; transition: 0.2s; }
+    .login-input:focus { border-color: var(--brand-green); }
+
+    .layout { display: flex; height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--sidebar-width); background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 24px 12px; flex-shrink: 0; }
+    .logo { padding: 0 12px; margin-bottom: 32px; cursor: pointer; }
+    .logo img { height: 22px; display: block; }
     
-    body, html { 
-      margin: 0; padding: 0; 
-      font-family: 'TildaSans', 'Noto Sans', Arial, sans-serif; 
-      background: var(--bg-main); 
-      color: var(--text-main); 
-      height: 100vh; 
-      overflow: hidden; 
+    .btn-new-chat { 
+      display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; 
+      background: var(--brand-green); border-radius: 16px; cursor: pointer; 
+      font-weight: 700; font-size: 14px; margin-bottom: 32px; transition: 0.2s; border: none;
     }
+    .btn-new-chat:hover { background: var(--brand-green-hover); transform: translateY(-1px); }
 
-    /* Навбар */
-    .navbar { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; background: #fff; border-bottom: 1px solid var(--border-color); }
-    .logo img { height: 32px; display: block; cursor: pointer; }
-    .nav-links { display: flex; gap: 32px; font-size: 16px; font-weight: 500; }
-    .nav-links a { color: var(--text-main); text-decoration: none; cursor: pointer; transition: 0.2s; padding-bottom: 4px; border-bottom: 2px solid transparent; }
-    .nav-links a.active { border-bottom-color: var(--text-main); }
+    .nav-menu { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+    .nav-item { 
+      display: flex; align-items: center; gap: 12px; padding: 10px 16px; 
+      border-radius: 10px; cursor: pointer; color: var(--text-main); 
+      font-weight: 500; transition: 0.2s; font-size: 14px; 
+    }
+    .nav-item:hover { background: #f5f5f7; }
+    .nav-item.active { background: var(--brand-green); color: #000; }
+
+    .history-label { font-size: 11px; font-weight: 800; color: #ccc; padding: 0 16px 12px; letter-spacing: 1px; text-transform: uppercase; }
+    .chat-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+    .chat-item { 
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-radius: 12px; cursor: pointer; font-size: 13.5px; 
+      color: #555; transition: 0.2s; group;
+    }
+    .chat-item:hover { background: #f5f5f7; }
+    .chat-item.active { background: #f0f0f2; color: #000; font-weight: 600; }
+    .chat-item-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
     
-    /* Главная кнопка */
-    .btn-primary { background-color: var(--brand-green); color: var(--text-main); border: 1px solid var(--border-color); padding: 12px 24px; border-radius: 15px; font-weight: 500; font-size: 15px; cursor: pointer; transition: 0.2s ease-in-out; }
-    .btn-primary:hover { background-color: var(--brand-green-hover); }
-    .btn-save { background: var(--text-main); color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 500; cursor: pointer; font-size: 14px; transition: 0.2s; }
-    .btn-save:hover { opacity: 0.8; }
+    .btn-del-chat { opacity: 0; transition: 0.2s; padding: 4px; border-radius: 6px; }
+    .chat-item:hover .btn-del-chat { opacity: 0.3; }
+    .btn-del-chat:hover { opacity: 1 !important; background: #fee2e2; color: #ef4444; }
 
-    /* Контейнер: огромные скругления как у них на лендинге */
-    .app-container { position: relative; z-index: 10; width: calc(100% - 60px); max-width: 1400px; height: calc(100vh - 100px); margin: 15px auto; background: var(--panel-bg); border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); display: flex; overflow: hidden; border: 1px solid var(--border-color); }
+    .user-profile { margin-top: auto; padding: 16px 12px 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+    .user-name { font-size: 13px; font-weight: 700; }
+    .btn-logout { cursor: pointer; opacity: 0.4; font-size: 12px; font-weight: 600; }
+    .btn-logout:hover { opacity: 1; color: #ff4d4f; }
 
-    /* Панели */
-    .left-panel { width: 40%; border-right: 1px solid var(--border-color); padding: 40px; display: flex; flex-direction: column; overflow-y: auto; background: #fafafa; }
-    .right-panel { width: 60%; padding: 40px; display: flex; flex-direction: column; background: var(--bg-main); overflow-y: auto; }
+    /* MAIN AREA */
+    .main-area { flex-grow: 1; display: flex; flex-direction: column; background: #fff; overflow: hidden; position: relative; }
     
-    /* Поиск */
-    .search-wrapper { position: relative; margin-bottom: 24px; }
-    .search-input { width: 100%; padding: 20px 24px; border: 1px solid var(--border-color); border-radius: 20px; font-size: 16px; outline: none; background: #fff; z-index: 2; position: relative; font-family: inherit; transition: 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-    .search-input:focus { border-color: var(--brand-green); box-shadow: 0 0 0 4px rgba(150, 234, 40, 0.15); }
-    .ghost-text { position: absolute; top: 20px; left: 24px; font-size: 16px; color: #b0b0b0; z-index: 1; pointer-events: none; white-space: nowrap; }
+    /* CHAT VIEW */
+    .messages-container { flex-grow: 1; overflow-y: auto; padding: 40px 18% 160px 18%; display: flex; flex-direction: column; gap: 40px; scroll-behavior: smooth; }
+    .msg-user { align-self: flex-end; max-width: 80%; background: #f4f4f7; padding: 16px 24px; border-radius: 20px 20px 4px 20px; font-size: 15px; line-height: 1.5; }
+    .msg-bot { align-self: flex-start; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+    .bot-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+    .bot-text { font-size: 15px; color: #444; line-height: 1.6; flex-grow: 1; }
+    .btn-save-report { background: #1e1e1e; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 500; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+
+    /* CARDS */
+    .result-card { background: #fff; border: 1px solid var(--border-color); border-radius: 24px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.03); margin-top: 8px; }
+    .kpi-value { font-size: 64px; font-weight: 800; color: var(--text-main); letter-spacing: -3px; line-height: 1; margin: 15px 0; }
+
+    /* INPUT */
+    .input-dock { position: absolute; bottom: 0; left: 0; right: 0; padding: 32px 18% 48px 18%; background: linear-gradient(to top, #fff 80%, transparent); }
+    .input-box { position: relative; display: flex; align-items: center; background: #fff; border: 1.5px solid var(--border-color); border-radius: 100px; padding: 6px 6px 6px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+    .input-box:focus-within { border-color: var(--brand-green); }
+    .input-field { flex-grow: 1; border: none; outline: none; font-size: 16px; padding: 12px 0; background: transparent; }
+    .ghost-text { position: absolute; left: 24px; top: 18px; color: #ccc; pointer-events: none; white-space: nowrap; font-size: 16px; }
     .ghost-text span { color: transparent; }
-    
-    /* Чипы в стиле Drivee (Таблетки) */
-    .chips-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-    .chip { padding: 10px 16px; border-radius: 100px; font-size: 14px; font-weight: 500; cursor: pointer; background: #f0f0f0; border: none; color: var(--text-main); transition: 0.2s; white-space: nowrap; }
-    .chip:hover { background: var(--brand-green); }
-    
-    /* SQL Код */
-    .sql-code { background: #1e1e1e; color: #a4f51e; border-radius: 15px; padding: 20px; font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; margin-top: auto; max-height: 200px; overflow-y: auto; border: 1px solid #333; }
+    .btn-send { background: var(--brand-green); border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
 
-    /* Карточка результата (динамическая высота flex: 0 0 auto) */
-    .result-card { background: #fff; border-radius: 20px; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.04); margin-bottom: 16px; display: flex; flex-direction: column; flex: 0 0 auto; height: auto; min-height: 400px; border: 1px solid var(--border-color); }
-    .badge { background: var(--brand-green); color: var(--text-main); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    /* GRID ARCHIVE */
+    .archive-grid { 
+      padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+      gap: 24px; background: var(--bg-main); height: 100%; overflow-y: auto; align-items: start;
+    }
+    .archive-card { background: #fff; padding: 24px; border-radius: 20px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; position: relative; }
+    .archive-card:hover { border-color: var(--brand-green); transform: translateY(-2px); }
+    .archive-card h4 { margin: 0 0 8px 0; font-size: 16px; font-weight: 700; padding-right: 30px; }
+    .archive-card p { margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .archive-card-date { margin-top: 16px; font-size: 10px; color: #ccc; font-weight: 700; text-transform: uppercase; }
 
-    /* KPI */
-    .kpi-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; text-align: center; }
-    .kpi-value { font-size: 96px; font-weight: 700; color: var(--text-main); margin: 10px 0; letter-spacing: -3px; line-height: 1; }
-    .kpi-label { font-size: 16px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; }
-
-    /* Таблицы и Графики */
-    .data-grid { display: flex; flex-direction: column; gap: 32px; margin-top: 24px; }
-    .chart-container { height: 280px; width: 100%; flex-shrink: 0; margin-bottom: 10px; }
-    
-    .table-container { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-color); }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
-    th { background: #fafafa; padding: 16px 20px; font-weight: 600; border-bottom: 1px solid var(--border-color); color: var(--text-muted); }
-    td { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; color: var(--text-main); }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f9f9f9; }
-
-    /* Отчеты */
-    .reports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; padding: 24px 40px; }
-    .report-item { background: white; border-radius: 20px; padding: 24px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-    .report-item:hover { border-color: var(--brand-green); box-shadow: 0 8px 24px rgba(0,0,0,0.06); transform: translateY(-3px); }
-    .report-item h4 { margin: 0 0 8px 0; font-size: 18px; color: var(--text-main); }
-    .report-item p { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
-    .report-date { font-size: 12px; color: #b0b0b0; margin-top: 16px; display: block; }
-    .btn-delete { position: absolute; top: 20px; right: 20px; background: none; border: none; color: #ef4444; cursor: pointer; opacity: 0.5; padding: 4px; border-radius: 8px; transition: 0.2s; }
-    .btn-delete:hover { opacity: 1; background: #fee2e2; }
-
-    /* Лоадер */
-    .loader { margin: auto; text-align: center; color: var(--text-muted); font-weight: 500; }
-    .spinner { border: 4px solid #f0f0f0; border-top: 4px solid var(--brand-green); border-radius: 50%; width: 48px; height: 48px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+    /* LOADER */
+    .spinner-box { display: flex; align-items: center; gap: 12px; margin-top: 10px; color: #888; font-size: 14px; }
+    .spinner { border: 2px solid #f3f3f3; border-top: 2px solid var(--brand-green); border-radius: 50%; width: 22px; height: 22px; animation: spin 0.8s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* TABLE */
+    .table-holder { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #fafafa; padding: 12px 16px; text-align: left; color: #888; font-weight: 600; border-bottom: 1px solid var(--border-color); }
+    td { padding: 12px 16px; border-bottom: 1px solid #f2f2f2; }
+
+    /* ICONS */
+    .icon-svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
   </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useRef, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 const API = "http://localhost:8000";
 
-const TrashIcon = () => <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+const Icons = {
+  Plus: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>,
+  Chat: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  Archive: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3m18 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8m18 0H3m7 5h4"/></svg>,
+  Community: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m14 10v-2a4 4 0 0 0-3-3.87"/></svg>,
+  Settings: () => <svg className="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  Trash: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+  Send: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+};
 
 function ChartView({ columns, rows }) {
   const canvasRef = useRef(null);
@@ -123,278 +148,280 @@ function ChartView({ columns, rows }) {
     const chart = new Chart(canvasRef.current, {
       type: 'bar',
       data: {
-        labels: rows.map(r => String(r[0])).slice(0, 15),
-        datasets:[{
-          label: columns[1] || 'Значение',
-          data: rows.map(r => Number(r[1]) || 0).slice(0, 15),
-          backgroundColor: '#1e1e1e', // Строгий графитовый цвет в спокойном состоянии
-          hoverBackgroundColor: '#96ea28', // Яркий фирменный зеленый при наведении мыши
-          borderRadius: 8 // Мягкие скругленные вершины столбцов
-        }]
+        labels: rows.map(r => String(r[0])).slice(0, 10),
+        datasets:[{ data: rows.map(r => Number(r[1]) || 0).slice(0, 10), backgroundColor: '#1e1e1e', hoverBackgroundColor: '#96ea28', borderRadius: 8 }]
       },
-      options: {
-        responsive: true, 
-        maintainAspectRatio: false,
-        plugins: { 
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1e1e1e', // Темная всплывающая подсказка
-            titleFont: { family: 'Noto Sans', size: 13 },
-            bodyFont: { family: 'Noto Sans', size: 14, weight: 'bold' },
-            padding: 12,
-            cornerRadius: 10,
-            displayColors: false // Убираем лишний цветной квадратик в тултипе
-          }
-        },
-        scales: { 
-            y: { 
-              beginAtZero: true, 
-              grid: { color: '#f0f0f0' }, 
-              border: {display: false},
-              ticks: { color: '#888888', font: { family: 'Noto Sans' } }
-            },
-            x: { 
-              grid: { display: false }, 
-              border: {display: false},
-              ticks: { color: '#888888', font: { family: 'Noto Sans' } }
-            }
-        }
-      }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } } }
     });
     return () => chart.destroy();
-  },[rows]);
-  return <div className="chart-container"><canvas ref={canvasRef} /></div>;
+  }, [rows]);
+  return <div style={{height: 240}}><canvas ref={canvasRef} /></div>;
 }
 
 function App() {
-  const [view, setView] = useState("analytics");
-  const[input, setInput] = useState("");
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+  const [view, setView] = useState("chat");
+  const [chats, setChats] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
   const [ghost, setGhost] = useState("");
-  const[loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const[reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef(null);
 
-  const loadReports = async () => {
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages, loading]);
+  useEffect(() => { if (user) loadChats(); }, [user, view]);
+
+  const loadChats = async () => {
     try {
-      const r = await fetch(`${API}/reports`);
-      const data = await r.json();
-      setReports(data);
-    } catch (e) { console.error(e); }
+      const res = await fetch(`${API}/chats/${user.username}`);
+      setChats(await res.json());
+    } catch(e) {}
   };
 
-  useEffect(() => { if (view === "reports") loadReports(); }, [view]);
-
-  const openReport = async (rep) => {
+  const selectChat = async (id) => {
+    setCurrentChatId(id);
     setLoading(true);
-    setView("analytics");
-    setInput(rep.question);
+    setView("chat");
     try {
-      const r = await fetch(`${API}/execute_report`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          sql: rep.sql_query,
-          explanation: rep.explanation,
-          question: rep.question
-        })
-      });
-      const data = await r.json();
-      setResult(data);
-    } catch (e) { alert("Ошибка при загрузке данных отчета"); }
+        const res = await fetch(`${API}/chats/history/${id}`);
+        setMessages(await res.json());
+    } catch(e) {}
     setLoading(false);
   };
 
-  const handleSave = async () => {
-    if (!result) return;
-    const name = prompt("Название отчета:", `Отчет: ${result.question}`);
-    if (!name) return;
-    await fetch(`${API}/reports`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, question: result.question, sql: result.sql, explanation: result.explanation })
-    });
-    alert("Сохранено!");
-  };
-
-  const deleteReport = async (e, id) => {
+  const deleteChat = async (e, id) => {
     e.stopPropagation();
-    if (confirm("Удалить?")) {
-      await fetch(`${API}/reports/${id}`, { method: "DELETE" });
-      loadReports();
-    }
+    if (!confirm("Удалить этот чат?")) return;
+    try {
+      const res = await fetch(`${API}/chats/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        if (currentChatId === id) startNewChat();
+        loadChats();
+      }
+    } catch (e) { alert("Ошибка удаления"); }
   };
 
-  const ask = async (q) => {
-    if (!q) return;
-    setInput(q); setLoading(true); setResult(null); setView("analytics");
+  const startNewChat = () => {
+    setCurrentChatId(null);
+    setMessages([]);
+    setInput("");
+    setView("chat");
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
     try {
-      const r = await fetch(`${API}/query`, {
+        const res = await fetch(`${API}/login`, {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({username: e.target.username.value, password: e.target.password.value})
+        });
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('user', JSON.stringify(data));
+            setUser(data);
+        } else alert("Неверные данные");
+    } catch(e) { alert("Сервер недоступен"); }
+  };
+
+  const handleSave = async (res) => {
+    const suggestion = res.explanation.split(/[.,]/)[0].trim();
+    const name = prompt("Назовите этот отчет для архива:", suggestion);
+    if (name) alert("Отчет '" + name + "' доступен в разделе Архив");
+  };
+
+  const ask = async (text) => {
+    if (!text.trim()) return;
+    setMessages(prev => [...prev, {role: 'user', content: text}]);
+    setInput(""); setGhost(""); setLoading(true);
+
+    try {
+      const res = await fetch(`${API}/query`, {
         method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({question: q})
+        body: JSON.stringify({ 
+            chat_id: currentChatId, 
+            username: user.username, 
+            question: text,
+            history: messages.map(m => ({role: m.role, content: m.content}))
+        })
       });
-      const data = await r.json();
-      setResult(data);
-    } catch (e) { setResult({ error: true, message: e.message }); }
+      const data = await res.json();
+      if (res.ok) {
+        setMessages(prev => [...prev, data]);
+        if (!currentChatId) {
+            setCurrentChatId(data.chat_id);
+            loadChats();
+        }
+      } else { throw new Error(data.detail); }
+    } catch (e) {
+      setMessages(prev => [...prev, {role: 'assistant', content: "Ошибка: " + e.message, error: true}]);
+    }
     setLoading(false);
   };
 
   const fetchGhost = async (text) => {
     if (text.length < 3) { setGhost(""); return; }
     try {
-      const res = await fetch(`${API}/suggest/ghost`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prefix: text })
-      });
+      const res = await fetch(`${API}/suggest/ghost`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prefix: text }) });
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let streamTxt = "";
       while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
+        const { value, done } = await reader.read(); if (done) break;
         const chunk = decoder.decode(value);
         const lines = chunk.split("\n");
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const jsonStr = line.replace("data: ", "").trim();
-            if (jsonStr === "[DONE]") break;
-            try { streamTxt += JSON.parse(jsonStr).text; setGhost(streamTxt); } catch (e) {}
-          }
-        }
+        for (const line of lines) { if (line.startsWith("data: ")) { const jsonStr = line.replace("data: ", "").trim(); if (jsonStr === "[DONE]") break; try { streamTxt += JSON.parse(jsonStr).text; setGhost(streamTxt); } catch (e) {} } }
       }
     } catch (err) {}
   };
 
-  useEffect(() => {
-    const t = setTimeout(() => fetchGhost(input), 400);
-    return () => clearTimeout(t);
-  }, [input]);
+  useEffect(() => { const t = setTimeout(() => fetchGhost(input), 300); return () => clearTimeout(t); }, [input]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
-    if (e.key === 'Enter') { e.preventDefault(); ask(input); }
-  };
-
-  const isKPI = result && !result.error && result.data.rows && result.data.rows.length === 1;
+  if (!user) return (
+    <div className="login-screen">
+      <form className="login-card" onSubmit={handleLogin}>
+        <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{height: 28, marginBottom: 40}} />
+        <input name="username" className="login-input" placeholder="Логин" required />
+        <input name="password" type="password" className="login-input" placeholder="Пароль" required />
+        <button type="submit" className="btn-new-chat" style={{width: '100%', marginTop: 10}}>Войти</button>
+      </form>
+    </div>
+  );
 
   return (
-    <>
-      <nav className="navbar">
-        <div className="logo" onClick={() => setView("analytics")}>
-            <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" alt="Drivee" />
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="logo" onClick={startNewChat}>
+          <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" />
         </div>
-        <div className="nav-links">
-            <a className={view === "analytics" ? "active" : ""} onClick={() => setView("analytics")}>Аналитика</a>
-            <a className={view === "reports" ? "active" : ""} onClick={() => setView("reports")}>Отчеты</a>
-        </div>
-        <button className="btn-primary" onClick={() => {setInput(""); setResult(null); setView("analytics");}}>Новый запрос</button>
-      </nav>
+        
+        <button className="btn-new-chat" onClick={startNewChat}>
+          <Icons.Plus /> Новый чат
+        </button>
 
-      <div className="app-container">
-        {view === "analytics" ? (
-          <>
-            <div className="left-panel">
-              <h3 style={{marginTop: 0, marginBottom: 24, fontSize: '24px'}}>Задайте вопрос</h3>
-              <div className="search-wrapper">
-                <div className="ghost-text"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
-                <input type="text" className="search-input" value={input} 
-                       onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
-                       placeholder="Например, отмены по городам..." />
-              </div>
-              
-              <div className="chips-container">
-                <button className="chip" onClick={() => ask("Выручка за вчера")}>Выручка за вчера</button>
-                <button className="chip" onClick={() => ask("Сравни отмены по городам")}>Отмены по городам</button>
-                <button className="chip" onClick={() => ask("Сколько всего заказов")}>Всего заказов</button>
-              </div>
-              
-              {result && !result.error && <div className="sql-code">{result.sql}</div>}
+        <nav className="nav-menu">
+           <div className={`nav-item ${view === 'chat' ? 'active' : ''}`} onClick={() => setView('chat')}><Icons.Chat /> Чат</div>
+           <div className={`nav-item ${view === 'archive' ? 'active' : ''}`} onClick={() => setView('archive')}><Icons.Archive /> Архив</div>
+           <div className={`nav-item ${view === 'community' ? 'active' : ''}`} onClick={() => setView('community')}><Icons.Community /> Сообщество</div>
+           <div className={`nav-item ${view === 'automation' ? 'active' : ''}`} onClick={() => setView('automation')}><Icons.Settings /> Автоматизация</div>
+        </nav>
+
+        <div className="history-label">НЕДАВНИЕ</div>
+        <div className="chat-list">
+          {chats.map(c => (
+            <div key={c.id} className={`chat-item ${currentChatId === c.id && view === 'chat' ? 'active' : ''}`} onClick={() => selectChat(c.id)}>
+              <div className="chat-item-title">{c.title}</div>
+              <div className="btn-del-chat" onClick={(e) => deleteChat(e, c.id)}><Icons.Trash /></div>
             </div>
+          ))}
+        </div>
 
-            <div className="right-panel">
-              {loading ? (
-                 <div className="loader"><div className="spinner"></div>Считаем...</div>
-              ) : result && result.error ? (
-                <div style={{margin:'auto', color:'#ef4444', textAlign:'center', padding: '32px', background: '#fee2e2', borderRadius: '20px', border: '1px solid #f87171', width: '100%', maxWidth: '600px'}}>
-                  <svg style={{width: 50, height: 50, margin: '0 auto 16px'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <h3 style={{marginTop: 0, color: '#991b1b', fontSize: '20px'}}>Ошибка выполнения запроса</h3>
-                  <p style={{color: '#7f1d1d', lineHeight: 1.5}}>{result.message}</p>
-                  {result.sql && (
-                      <div className="sql-code" style={{textAlign: 'left', marginTop: 24, background: '#7f1d1d', color: '#fca5a5', border: 'none'}}>
-                          {result.sql}
-                      </div>
-                  )}
-                </div>
-              ) : result && !result.error ? (
-                <>
-                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 24, background: '#fff', padding: '16px 24px', borderRadius: '16px', border: '1px solid #ebebeb'}}>
-                    <div style={{color: '#6b7280', fontSize: '15px', lineHeight: 1.5, paddingRight: '20px'}}>
-                        Понял как: <b style={{color: '#1e1e1e'}}>{result.explanation}</b>
-                    </div>
-                    <button className="btn-save" onClick={handleSave}>Сохранить отчет</button>
-                  </div>
+        <div className="user-profile">
+          <div className="user-info">
+            <div className="user-name">{user.username}</div>
+            <div style={{fontSize:10, color:'#ccc', textTransform:'uppercase'}}>{user.role}</div>
+          </div>
+          <div className="btn-logout" onClick={() => {localStorage.clear(); window.location.reload();}}>Выйти</div>
+        </div>
+      </aside>
 
-                  <div className="result-card">
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 24}}>
-                      <span style={{fontWeight:700, fontSize:22}}>Результат</span>
-                      <span className="badge">SQL Success</span>
-                    </div>
-
-                    {isKPI ? (
-                      <div className="kpi-container">
-                        <div className="kpi-value">
-                          {(() => {
-                              const val = result.data.rows[0][result.data.rows[0].length - 1];
-                              return typeof val === 'number' ? val.toLocaleString('ru-RU') : val;
-                          })()}
-                        </div>
-                        <div className="kpi-label">{result.data.columns[result.data.columns.length - 1]}</div>
-                      </div>
-                    ) : (
-                      <div className="data-grid">
-                        <ChartView columns={result.data.columns} rows={result.data.rows} />
-                        <div className="table-container">
-                          <table>
-                            <thead><tr>{result.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
-                            <tbody>
-                              {result.data.rows.slice(0, 15).map((row, i) => (
-                                <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div style={{margin:'auto', color:'#9ca3af', textAlign:'center'}}>
-                  <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{opacity: 0.15, height: 60, marginBottom: 20}} />
-                  <p style={{fontSize: '18px', fontWeight: 500}}>Напишите запрос слева,<br/>чтобы увидеть аналитику</p>
+      <main className="main-area">
+        {view === "chat" ? (
+          <>
+            <div className="messages-container" ref={scrollRef}>
+              {messages.length === 0 && (
+                <div style={{margin: 'auto', textAlign: 'center', opacity: 0.1}}>
+                  <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{width: 140}} />
                 </div>
               )}
-            </div>
-          </>
-        ) : (
-          <div style={{width: '100%', overflowY: 'auto', background: '#f5f6f8'}}>
-            <div style={{padding: '40px 40px 10px'}}>
-                <h1 style={{margin: 0, fontSize: '32px'}}>Сохраненные отчеты</h1>
-            </div>
-            <div className="reports-grid">
-              {reports.map((rep) => (
-                <div key={rep.id} className="report-item" onClick={() => openReport(rep)}>
-                  <button className="btn-delete" onClick={(e) => deleteReport(e, rep.id)}><TrashIcon /></button>
-                  <h4>{rep.name}</h4>
-                  <p>{rep.question}</p>
-                  <span className="report-date">{rep.created_at}</span>
+              {messages.map((m, idx) => (
+                <div key={idx} className={m.role === 'user' ? 'msg-user' : 'msg-bot'}>
+                  <div className="bot-header">
+                    <div className="bot-text">{m.content}</div>
+                    {m.data && <button className="btn-save-report" onClick={() => handleSave(m.data)}>Сохранить</button>}
+                  </div>
+                  {m.data && !m.error && (
+                    <div className="result-card">
+                      {m.data.data.rows.length === 1 && m.data.data.columns.length === 1 ? (
+                        <div style={{textAlign: 'center', padding: 10}}>
+                          <div style={{fontSize: 11, color: '#888', textTransform: 'uppercase'}}>{m.data.data.columns[0]}</div>
+                          <div className="kpi-value">{m.data.data.rows[0][0].toLocaleString('ru-RU')}</div>
+                        </div>
+                      ) : (
+                        <>
+                          <ChartView columns={m.data.data.columns} rows={m.data.data.rows} />
+                          <div className="table-holder">
+                            <table>
+                              <thead><tr>{m.data.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+                              <tbody>{m.data.data.rows.slice(0, 5).map((row, i) => (<tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>))}</tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
+                      {user.role === 'admin' && (
+                        <div style={{marginTop:20, fontSize:10, color:'#ccc', fontFamily:'monospace'}}>ADMIN SQL: {m.data.sql}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
+              {loading && <div className="msg-bot"><div className="spinner-box"><div className="spinner"></div> Считаю...</div></div>}
             </div>
+
+            <div className="input-dock">
+              <div className="input-box">
+                <div className="ghost-text"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
+                <input 
+                  className="input-field" 
+                  placeholder="Спроси Drivee..." 
+                  value={input} 
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
+                    if (e.key === 'Enter') ask(input);
+                  }}
+                />
+                <button className="btn-send" onClick={() => ask(input)}><Icons.Send /></button>
+              </div>
+            </div>
+          </>
+        ) : view === "archive" ? (
+          <div className="archive-grid">
+             {chats.map(c => (
+              <div key={c.id} className="archive-card" onClick={() => selectChat(c.id)}>
+                <div style={{position:'absolute', top:20, right:20, opacity:0.2}} onClick={(e) => deleteChat(e, c.id)}><Icons.Trash /></div>
+                <h4>{c.title}</h4>
+                <p>{c.title}</p>
+                <div className="archive-card-date">{new Date(c.created_at).toLocaleDateString()}</div>
+              </div>
+            ))}
           </div>
+        ) : view === "community" ? (
+            <div style={{padding:40, maxWidth:800, margin:'0 auto'}}>
+                <div className="archive-card" style={{padding: 32, cursor: 'default'}}>
+                    <div style={{display:'flex', gap:12, marginBottom:20}}>
+                        <div style={{width:32, height:32, borderRadius:16, background:'#eee'}}></div>
+                        <div><div style={{fontWeight:700, fontSize: 14}}>Алина К.</div><div style={{fontSize:12, color:'#8e8e93'}}>Product Analyst</div></div>
+                    </div>
+                    <p style={{fontSize: 15, color: '#1e1e1e', marginBottom: 20}}>Заметила аномалию выручки в Якутске. Похоже на влияние погоды.</p>
+                    <div style={{background:'#f5f5f7', padding:20, borderRadius:12, marginBottom:16, fontSize: 13}}><b>Запрос:</b> Выручка по часам в г. Якутск</div>
+                    <button className="btn-new-chat" style={{padding:'8px 16px', fontSize:12, marginBottom:0}} onClick={() => ask("Выручка по часам в Якутске")}>Использовать</button>
+                </div>
+            </div>
+        ) : (
+            <div style={{padding:40, maxWidth:600, margin:'0 auto'}}>
+                <div style={{background:'#fff', padding:32, borderRadius:24, border:'1px solid #ebebeb'}}>
+                    <h3 style={{marginTop:0, fontSize: 18, fontWeight:700}}>Автоматизация</h3>
+                    <p style={{color:'#8e8e93', fontSize:14, marginBottom: 24}}>Плановые отчеты на почту.</p>
+                    <div style={{display:'flex', alignItems:'center', gap:16, padding:'16px 0', borderBottom:'1px solid #f2f2f2'}}>
+                        <div style={{width:32, height:16, background:'#96ea28', borderRadius:100}}></div>
+                        <div><div style={{fontSize: 14, fontWeight:600}}>Выручка (09:00 AM)</div><div style={{fontSize:12, color:'#8e8e93'}}>alina@drivee.com</div></div>
+                    </div>
+                </div>
+            </div>
         )}
-      </div>
-    </>
+      </main>
+    </div>
   );
 }
 
