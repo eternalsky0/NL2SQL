@@ -254,6 +254,18 @@
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 3px; }
 
+    /* CHART TYPE SWITCHER */
+    .chart-switcher { display: flex; gap: 4px; margin-bottom: 16px; }
+    .chart-type-btn { padding: 5px 12px; border-radius: 8px; border: 1.5px solid var(--border-color); background: #fff; font-size: 12px; font-weight: 500; cursor: pointer; color: #888; transition: 0.15s; display: flex; align-items: center; gap: 5px; }
+    .chart-type-btn:hover { border-color: #bbb; color: #444; }
+    .chart-type-btn.active { background: #1e1e1e; color: #fff; border-color: #1e1e1e; }
+
+    /* INSIGHT BLOCK */
+    .insight-block { margin-top: 16px; padding: 14px 18px; background: #f9fef0; border: 1.5px solid #d9f99d; border-radius: 14px; font-size: 13.5px; color: #444; line-height: 1.6; }
+    .insight-block-loading { display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 13px; margin-top: 12px; }
+    .btn-insight { background: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: #888; font-family: inherit; display: flex; align-items: center; gap: 6px; transition: 0.15s; }
+    .btn-insight:hover { border-color: #96ea28; color: #444; background: #f9fef0; }
+
     /* EXPORT MENU */
     .export-btn { background: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: #888; font-family: inherit; display: flex; align-items: center; gap: 6px; transition: 0.15s; white-space: nowrap; }
     .export-btn:hover { border-color: #bbb; color: #444; }
@@ -325,33 +337,46 @@ function fmt(v) {
 }
 
 // ── Chart ────────────────────────────────────────────────────────
-function ChartView({ columns, rows }) {
+const PIE_COLORS = ['#96ea28','#1e1e1e','#60a5fa','#fbbf24','#f87171','#a78bfa','#34d399','#fb923c'];
+
+function ChartView({ columns, rows, type = 'bar' }) {
   const canvasRef = useRef(null);
+  const chartRef = useRef(null);
   useEffect(() => {
     if (!canvasRef.current || !rows || rows.length <= 1) return;
-    const chart = new Chart(canvasRef.current, {
-      type: 'bar',
+    if (chartRef.current) chartRef.current.destroy();
+    const isPie = type === 'pie';
+    const isLine = type === 'line';
+    chartRef.current = new Chart(canvasRef.current, {
+      type: isPie ? 'pie' : isLine ? 'line' : 'bar',
       data: {
         labels: rows.map(r => String(r[0])).slice(0, 15),
         datasets: [{
+          label: columns[1] || '',
           data: rows.map(r => Number(r[1]) || 0).slice(0, 15),
-          backgroundColor: '#1e1e1e',
-          hoverBackgroundColor: '#96ea28',
-          borderRadius: 8
+          backgroundColor: isPie ? PIE_COLORS : '#1e1e1e',
+          hoverBackgroundColor: isPie ? PIE_COLORS : '#96ea28',
+          borderColor: isLine ? '#96ea28' : 'transparent',
+          borderWidth: isLine ? 2.5 : 0,
+          fill: isLine ? { target: 'origin', above: 'rgba(150,234,40,0.07)' } : false,
+          tension: 0.4,
+          pointBackgroundColor: '#96ea28',
+          pointRadius: isLine ? 4 : 0,
+          borderRadius: (!isPie && !isLine) ? 8 : 0,
         }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
+        plugins: { legend: { display: isPie, labels: { color: '#888', font: { size: 11 } } } },
+        scales: isPie ? {} : {
           y: { grid: { color: '#f0f0f0' }, ticks: { color: '#aaa', font: { size: 11 } } },
           x: { grid: { display: false }, ticks: { color: '#aaa', font: { size: 11 }, maxRotation: 30 } }
         }
       }
     });
-    return () => chart.destroy();
-  }, [rows]);
-  return <div style={{height: 220}}><canvas ref={canvasRef} /></div>;
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [rows, type]);
+  return <div style={{height: 240}}><canvas ref={canvasRef} /></div>;
 }
 
 // ── Export utilities ─────────────────────────────────────────────
@@ -648,9 +673,34 @@ function ReportModal({ question, sql, chartType, onClose }) {
 }
 
 // ── Bot message ───────────────────────────────────────────────────
+const CHART_TYPES = [
+  { id: 'bar',   label: 'Столбчатый', icon: '▮▮' },
+  { id: 'line',  label: 'Линейный',   icon: '╱╱' },
+  { id: 'pie',   label: 'Круговой',   icon: '◔' },
+  { id: 'table', label: 'Таблица',    icon: '☰' },
+];
+
 function BotMessage({ msg }) {
   const cardRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
+  const [viewType, setViewType] = useState(null);
+  const [insight, setInsight] = useState(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+
+  const loadInsight = async (columns, rows) => {
+    if (insight || insightLoading) return;
+    setInsightLoading(true);
+    try {
+      const r = await fetch(`${API}/insight`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ columns, rows: rows.slice(0, 50), question: msg.content })
+      });
+      const d = await r.json();
+      if (d.insight) setInsight(d.insight);
+    } catch {}
+    setInsightLoading(false);
+  };
 
   if (msg.error) {
     return (
@@ -715,7 +765,24 @@ function BotMessage({ msg }) {
               </div>
             ) : (
               <>
-                {showChart && <ChartView columns={d.data.columns} rows={d.data.rows} />}
+                {showChart && (
+                  <>
+                    <div className="chart-switcher">
+                      {CHART_TYPES.map(ct => (
+                        <button
+                          key={ct.id}
+                          className={`chart-type-btn ${(viewType || d.chart_type || 'bar') === ct.id ? 'active' : ''}`}
+                          onClick={() => setViewType(ct.id)}
+                        >
+                          {ct.icon} {ct.label}
+                        </button>
+                      ))}
+                    </div>
+                    {(viewType || d.chart_type) !== 'table' && (
+                      <ChartView columns={d.data.columns} rows={d.data.rows} type={viewType || d.chart_type || 'bar'} />
+                    )}
+                  </>
+                )}
                 <div className="table-holder">
                   <table>
                     <thead><tr>{d.data.columns.map((c, i) => <th key={i}>{colName(c)}</th>)}</tr></thead>
@@ -729,6 +796,21 @@ function BotMessage({ msg }) {
                     <div style={{textAlign:'center', padding:'8px', fontSize:12, color:'#aaa', borderTop:'1px solid #f5f5f7'}}>
                       Показано 20 из {d.data.rows.length} строк
                     </div>
+                  )}
+                </div>
+                <div style={{marginTop: 12}}>
+                  {!insight && !insightLoading && (
+                    <button className="btn-insight" onClick={() => loadInsight(d.data.columns, d.data.rows)}>
+                      ✨ Объяснить данные
+                    </button>
+                  )}
+                  {insightLoading && (
+                    <div className="insight-block-loading">
+                      <div className="spinner" style={{width:14,height:14,borderWidth:1.5}} /> Анализирую…
+                    </div>
+                  )}
+                  {insight && (
+                    <div className="insight-block">✨ {insight}</div>
                   )}
                 </div>
               </>
@@ -1176,6 +1258,10 @@ function App() {
           <a href="reports.html" className="nav-item">
             <Icons.Reports /> Отчёты
             {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}
+          </a>
+          <a href="dashboard.html" className="nav-item">
+            <svg className="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Дашборд
           </a>
           <div className={`nav-item ${view === 'archive' ? 'active' : ''}`} onClick={() => setView('archive')}>
             <Icons.Archive /> Архив

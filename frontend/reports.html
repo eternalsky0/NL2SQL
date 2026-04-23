@@ -197,6 +197,17 @@
     .sql-toggle:hover { color: #666; }
     .sql-block { background: #f8f8fa; border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; font-family: monospace; font-size: 12px; color: #555; overflow-x: auto; white-space: pre; margin-top: 10px; line-height: 1.7; }
 
+    /* ── Alerts ── */
+    .alerts-grid { display: flex; flex-direction: column; gap: 12px; max-width: 800px; }
+    .alert-card { background: #fff; border: 1px solid var(--border-color); border-radius: 20px; padding: 20px 24px; display: grid; grid-template-columns: 1fr auto; gap: 12px 24px; align-items: start; transition: border-color 0.15s, box-shadow 0.15s; }
+    .alert-card:hover { border-color: #d4d4d8; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .alert-card.inactive { opacity: 0.5; }
+    .alert-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .alert-meta { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .alert-expr { font-family: monospace; font-size: 12px; background: #f9fef0; border: 1px solid #d9f99d; color: #65a30d; padding: 2px 8px; border-radius: 6px; }
+    .alert-status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .alert-actions { display: flex; gap: 6px; align-items: center; }
+
     /* ── Inbox ── */
     .inbox-list { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
     .inbox-card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 20px; display: flex; align-items: flex-start; gap: 14px; cursor: pointer; transition: border-color 0.12s; }
@@ -825,6 +836,203 @@ function InboxTab({ toast, onCountChange }) {
   );
 }
 
+// ── Alerts tab ────────────────────────────────────────────────────
+const OPERATORS = [
+  { value: '<',  label: 'меньше' },
+  { value: '>',  label: 'больше' },
+  { value: '<=', label: '≤' },
+  { value: '>=', label: '≥' },
+  { value: '=',  label: 'равно' },
+];
+
+function AlertForm({ reports, onClose, onSaved, toast }) {
+  const [name, setName]         = useState('');
+  const [reportId, setReportId] = useState(reports[0]?.id || '');
+  const [operator, setOperator] = useState('<');
+  const [threshold, setThreshold] = useState('');
+  const [rcptInput, setRcptInput] = useState('');
+  const [rcpts, setRcpts]       = useState([]);
+  const [saving, setSaving]     = useState(false);
+
+  const addRcpt = () => {
+    const v = rcptInput.trim();
+    if (v && !rcpts.includes(v)) setRcpts(r => [...r, v]);
+    setRcptInput('');
+  };
+
+  const save = async () => {
+    if (!name || !reportId || threshold === '') { toast('Заполните все обязательные поля', 'err'); return; }
+    setSaving(true);
+    try {
+      const r = await fetch(`${API}/alerts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, report_id: Number(reportId), operator, threshold: Number(threshold), recipients: rcpts }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      toast('Алерт создан');
+      onSaved(await r.json());
+    } catch (e) { toast(e.message, 'err'); }
+    setSaving(false);
+  };
+
+  const rep = reports.find(r => r.id === Number(reportId));
+
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <div className="modal-head">
+          <h2>Новый алерт</h2>
+          <button className="close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="field">
+            <label>Название *</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Выручка упала" autoFocus />
+          </div>
+          <div className="field">
+            <label>Отчёт для проверки *</label>
+            <select value={reportId} onChange={e => setReportId(e.target.value)}>
+              {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            {rep && <div className="field-hint">{rep.question}</div>}
+          </div>
+          <div className="field">
+            <label>Условие срабатывания *</label>
+            <div style={{display:'flex', gap:8, alignItems:'center'}}>
+              <span style={{fontSize:13,color:'#888',flexShrink:0}}>Первое значение</span>
+              <select value={operator} onChange={e => setOperator(e.target.value)} style={{width:'auto',flex:'0 0 auto'}}>
+                {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <input type="number" value={threshold} onChange={e => setThreshold(e.target.value)} placeholder="1000" style={{flex:1}} />
+            </div>
+            {threshold !== '' && <div className="field-hint" style={{color:'#65a30d'}}>Сработает если: значение {operator} {threshold}</div>}
+          </div>
+          <div className="field">
+            <label>Email-получатели <span style={{fontWeight:400,textTransform:'none',letterSpacing:0}}>(необязательно)</span></label>
+            <div style={{display:'flex',gap:8}}>
+              <input type="email" value={rcptInput} onChange={e => setRcptInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRcpt()} placeholder="ops@company.com" />
+              <button className="btn btn-ghost btn-sm" onClick={addRcpt} style={{flex:'0 0 auto'}}>+ Добавить</button>
+            </div>
+            {rcpts.length > 0 && (
+              <div className="rcpt-list">
+                {rcpts.map(r => <span key={r} className="rcpt-tag">{r} <span className="rcpt-rm" onClick={() => setRcpts(x => x.filter(v => v !== r))}>✕</span></span>)}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
+          <button className="btn btn-green" onClick={save} disabled={saving}>
+            {saving && <span className="spin" />} Создать алерт
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AlertsTab({ toast }) {
+  const [alerts, setAlerts]     = useState([]);
+  const [reports, setReports]   = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [showForm, setShowForm] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [al, rep] = await Promise.all([
+        fetch(`${API}/alerts`).then(r => r.json()),
+        fetch(`${API}/reports`).then(r => r.json()),
+      ]);
+      setAlerts(al); setReports(rep);
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const toggle = async (alert) => {
+    try {
+      const updated = await fetch(`${API}/alerts/${alert.id}`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ enabled: !alert.enabled }),
+      }).then(r => r.json());
+      setAlerts(as => as.map(a => a.id === updated.id ? updated : a));
+    } catch (e) { toast(e.message, 'err'); }
+  };
+
+  const del = async (alert) => {
+    if (!confirm(`Удалить алерт «${alert.name}»?`)) return;
+    await fetch(`${API}/alerts/${alert.id}`, { method: 'DELETE' });
+    setAlerts(as => as.filter(a => a.id !== alert.id));
+    toast('Алерт удалён');
+  };
+
+  const getReport = (id) => reports.find(r => r.id === id);
+
+  const header = (
+    <div className="page-header">
+      <div className="page-title">Алерты</div>
+      <div className="page-subtitle">Уведомления при достижении пороговых значений</div>
+    </div>
+  );
+
+  if (loading) return <>{header}<div style={{display:'flex',alignItems:'center',gap:10,color:'#aaa',padding:'60px 0'}}><span className="spin" style={{color:'#aaa'}} /> Загрузка…</div></>;
+
+  return (
+    <>
+      {header}
+      {alerts.length === 0 ? (
+        <div className="empty"><h3>Алертов пока нет</h3><p style={{fontSize:13}}>Создайте первый — он проверяется каждые 15 минут</p></div>
+      ) : (
+        <div className="alerts-grid">
+          {alerts.map(alert => {
+            const rep = getReport(alert.report_id);
+            const triggered = alert.last_triggered_at;
+            return (
+              <div key={alert.id} className={`alert-card ${!alert.enabled ? 'inactive' : ''}`}>
+                <div>
+                  <div className="alert-name">{alert.name}</div>
+                  <div className="alert-meta">
+                    {rep && <span>{rep.name}</span>}
+                    <span className="alert-expr">значение {alert.operator} {alert.threshold}</span>
+                    {alert.last_value != null && <span style={{color:'#aaa'}}>последнее: {alert.last_value}</span>}
+                    {triggered
+                      ? <><span className="alert-status-dot" style={{background:'#ef4444'}} />  сработал {fmtDate(triggered)}</>
+                      : alert.last_checked_at
+                        ? <><span className="alert-status-dot" style={{background:'#16a34a'}} /> в норме</>
+                        : <><span className="alert-status-dot" style={{background:'#d4d4d8'}} /> не проверялся</>
+                    }
+                  </div>
+                </div>
+                <div className="alert-actions">
+                  <label className="toggle" onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={!!alert.enabled} onChange={() => toggle(alert)} />
+                    <div className="toggle-track" /><div className="toggle-thumb" />
+                  </label>
+                  <button className="btn btn-danger btn-sm" onClick={() => del(alert)}>✕</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="fab">
+        <button className="btn btn-green" onClick={() => setShowForm(true)} disabled={reports.length === 0}
+          style={{height:48,paddingInline:24,borderRadius:16,fontSize:14,fontWeight:700,boxShadow:'0 8px 24px rgba(150,234,40,0.3)'}}>
+          + Новый алерт
+        </button>
+      </div>
+
+      {showForm && reports.length > 0 && (
+        <AlertForm reports={reports} onClose={() => setShowForm(false)} onSaved={(a) => { setAlerts(as => [a, ...as]); setShowForm(false); }} toast={toast} />
+      )}
+    </>
+  );
+}
+
 // ── App ────────────────────────────────────────────────────────────
 function App() {
   const [tab, setTab] = useState("reports");
@@ -864,13 +1072,22 @@ function App() {
             Входящие
             {unread > 0 && <span className="nav-badge">{unread}</span>}
           </div>
+          <a href="dashboard.html" className="nav-item">
+            <svg className="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Дашборд
+          </a>
+          <div className={`nav-item ${tab === "alerts" ? "active" : ""}`} onClick={() => setTab("alerts")}>
+            <svg className="icon-svg" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Алерты
+          </div>
         </div>
       </nav>
 
       <div className="main">
         <div className="content">
           {tab === "reports" && <ReportsTab toast={toast} />}
-          {tab === "inbox" && <InboxTab toast={toast} onCountChange={setUnread} />}
+          {tab === "inbox"   && <InboxTab toast={toast} onCountChange={setUnread} />}
+          {tab === "alerts"  && <AlertsTab toast={toast} />}
         </div>
       </div>
 

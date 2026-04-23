@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drivee · Дашборд</title>
+  <link rel="icon" href="https://logo-teka.com/wp-content/uploads/2026/02/drivee-icon-logo.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --brand-green: #96ea28;
+      --brand-green-hover: #7ac517;
+      --bg-main: #f5f6f8;
+      --text-main: #1e1e1e;
+      --text-muted: #8e8e93;
+      --border-color: #ebebeb;
+      --sidebar-width: 260px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    html, body, #root { height: 100vh; overflow: hidden; }
+    body { background: var(--bg-main); color: var(--text-main); font-size: 14px; }
+    #root { display: flex; }
+    .layout { display: flex; height: 100vh; width: 100%; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: var(--sidebar-width); flex-shrink: 0; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 24px 12px; }
+    .logo { padding: 0 12px; margin-bottom: 32px; }
+    .logo img { height: 22px; display: block; }
+    .btn-new-chat { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; background: var(--brand-green); border-radius: 16px; cursor: pointer; font-weight: 700; font-size: 14px; margin-bottom: 32px; transition: 0.2s; border: none; width: 100%; text-decoration: none; color: #000; }
+    .btn-new-chat:hover { background: var(--brand-green-hover); transform: translateY(-1px); }
+    .nav-menu { display: flex; flex-direction: column; gap: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 10px; cursor: pointer; color: var(--text-main); font-weight: 500; transition: 0.2s; font-size: 14px; text-decoration: none; }
+    .nav-item:hover { background: #f5f5f7; }
+    .nav-item.active { background: var(--brand-green); color: #000; }
+    .nav-badge { margin-left: auto; background: var(--brand-green); color: #000; border-radius: 20px; font-size: 10px; font-weight: 800; padding: 1px 7px; }
+    .icon-svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
+
+    /* ── Main ── */
+    .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .dash-header { padding: 28px 32px 20px; border-bottom: 1px solid var(--border-color); background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+    .dash-title { font-size: 22px; font-weight: 800; }
+    .dash-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+    .dash-content { flex: 1; overflow-y: auto; padding: 28px 32px; }
+
+    /* ── Grid ── */
+    .widget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; align-items: start; }
+    .widget { background: #fff; border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; transition: box-shadow 0.2s, transform 0.15s; }
+    .widget.dragging { opacity: 0.5; transform: scale(0.98); }
+    .widget.drag-over { border-color: var(--brand-green); box-shadow: 0 0 0 2px rgba(150,234,40,0.3); }
+    .widget-header { padding: 16px 20px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f5f5f7; }
+    .drag-handle { cursor: grab; color: #d4d4d8; font-size: 16px; flex-shrink: 0; user-select: none; }
+    .drag-handle:active { cursor: grabbing; }
+    .widget-name { font-weight: 700; font-size: 13.5px; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .widget-chart-type { font-size: 11px; color: #aaa; font-weight: 500; flex-shrink: 0; }
+    .widget-body { padding: 20px; }
+    .widget-kpi { text-align: center; padding: 16px 0; }
+    .widget-kpi-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+    .widget-kpi-value { font-size: 48px; font-weight: 800; letter-spacing: -2px; line-height: 1; color: var(--text-main); }
+    .widget-footer { padding: 10px 20px 14px; display: flex; align-items: center; justify-content: space-between; }
+    .widget-date { font-size: 11px; color: #ccc; font-family: monospace; }
+    .widget-empty { text-align: center; padding: 28px 16px; color: #ccc; font-size: 13px; }
+    .widget-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 32px; color: #ccc; font-size: 13px; }
+    .spin { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.08); border-top-color: currentColor; border-radius: 50%; animation: rot 0.65s linear infinite; }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    /* ── Add widget panel ── */
+    .add-panel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.28); backdrop-filter: blur(2px); z-index: 200; display: flex; align-items: center; justify-content: center; }
+    .add-panel { background: #fff; border-radius: 28px; padding: 36px; width: 520px; max-width: 92vw; max-height: 80vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,0.14); }
+    .add-panel h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .report-pick { display: flex; flex-direction: column; gap: 8px; }
+    .report-pick-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 1.5px solid var(--border-color); border-radius: 14px; cursor: pointer; transition: 0.15s; }
+    .report-pick-item:hover { border-color: var(--brand-green); background: #f9fef0; }
+    .report-pick-item.added { opacity: 0.4; pointer-events: none; }
+    .rpi-icon { font-size: 22px; flex-shrink: 0; }
+    .rpi-name { font-weight: 700; font-size: 13.5px; }
+    .rpi-q { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Empty dashboard ── */
+    .dash-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; color: #ccc; text-align: center; padding: 60px; }
+    .dash-empty h3 { font-size: 18px; color: #888; }
+    .dash-empty p { font-size: 13px; max-width: 320px; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+const API = "http://localhost:8000";
+const CHART_ICONS = { bar: '📊', line: '📈', pie: '🥧', table: '📋' };
+const PIE_COLORS = ['#96ea28','#1e1e1e','#60a5fa','#fbbf24','#f87171','#a78bfa','#34d399','#fb923c'];
+
+const fmtNum = (v) => {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isNaN(n)) return Number.isInteger(n) ? n.toLocaleString('ru-RU') : n.toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+  return String(v);
+};
+const fmtDate = (d) => d ? new Date(d).toLocaleString('ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+
+// ── Mini chart ────────────────────────────────────────────────────
+function MiniChart({ columns, rows, type }) {
+  const ref = useRef(null);
+  const inst = useRef(null);
+  useEffect(() => {
+    if (!ref.current || !rows?.length) return;
+    if (inst.current) inst.current.destroy();
+    const isPie = type === 'pie', isLine = type === 'line';
+    inst.current = new Chart(ref.current, {
+      type: isPie ? 'pie' : isLine ? 'line' : 'bar',
+      data: {
+        labels: rows.slice(0, 10).map(r => String(r[0])),
+        datasets: [{
+          data: rows.slice(0, 10).map(r => Number(r[1]) || 0),
+          backgroundColor: isPie ? PIE_COLORS : '#1e1e1e',
+          hoverBackgroundColor: isPie ? PIE_COLORS : '#96ea28',
+          borderColor: isLine ? '#96ea28' : 'transparent',
+          borderWidth: isLine ? 2 : 0,
+          fill: isLine ? { target: 'origin', above: 'rgba(150,234,40,0.07)' } : false,
+          tension: 0.4, pointRadius: 0, borderRadius: (!isPie && !isLine) ? 6 : 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: isPie ? {} : {
+          x: { display: false }, y: { display: false, grid: { display: false } }
+        }
+      }
+    });
+    return () => { if (inst.current) inst.current.destroy(); };
+  }, [rows, type]);
+  return <canvas ref={ref} />;
+}
+
+// ── Widget ────────────────────────────────────────────────────────
+function Widget({ report, onRemove, dragHandlers }) {
+  const [state, setState] = useState('loading'); // loading | ok | empty | error
+  const [data, setData]   = useState(null);
+  const [runDate, setRunDate] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API}/reports/${report.id}/last_result`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok && d.data?.columns?.length) {
+          setData(d.data);
+          setRunDate(d.run?.finished_at || null);
+          setState('ok');
+        } else {
+          setState('empty');
+        }
+      })
+      .catch(() => setState('error'));
+  }, [report.id]);
+
+  const run = async () => {
+    setState('loading');
+    try {
+      const r = await fetch(`${API}/reports/${report.id}/run`, { method: 'POST' });
+      const d = await r.json();
+      if (d.status === 'success' && d.data?.columns?.length) {
+        setData(d.data); setRunDate(new Date().toISOString()); setState('ok');
+      } else {
+        setState('empty');
+      }
+    } catch { setState('error'); }
+  };
+
+  const chartType = report.chart_type || 'bar';
+  const isKpi = data && data.columns.length === 1 && data.rows.length === 1;
+  const hasChart = data && !isKpi && data.columns.length >= 2 && chartType !== 'table' && !isNaN(Number(data.rows[0]?.[1]));
+
+  return (
+    <div className="widget" {...dragHandlers}>
+      <div className="widget-header">
+        <span className="drag-handle" title="Перетащить">⠿</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="widget-name">{report.name}</div>
+        </div>
+        <span className="widget-chart-type">{CHART_ICONS[chartType]}</span>
+        <button onClick={onRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', fontSize: 16, lineHeight: 1, padding: '0 0 0 8px' }} title="Убрать">✕</button>
+      </div>
+
+      <div className="widget-body">
+        {state === 'loading' && <div className="widget-loading"><span className="spin" /> Загрузка…</div>}
+        {state === 'error'   && <div className="widget-empty">Ошибка загрузки</div>}
+        {state === 'empty'   && (
+          <div className="widget-empty">
+            Данных нет
+            <div style={{ marginTop: 12 }}>
+              <button onClick={run} style={{ background: 'var(--brand-green)', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>▶ Запустить</button>
+            </div>
+          </div>
+        )}
+        {state === 'ok' && isKpi && (
+          <div className="widget-kpi">
+            <div className="widget-kpi-label">{data.columns[0].replace(/_/g, ' ')}</div>
+            <div className="widget-kpi-value">{fmtNum(data.rows[0][0])}</div>
+          </div>
+        )}
+        {state === 'ok' && hasChart && (
+          <div style={{ height: 160 }}>
+            <MiniChart columns={data.columns} rows={data.rows} type={chartType} />
+          </div>
+        )}
+        {state === 'ok' && !isKpi && !hasChart && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead><tr>{data.columns.map((c, i) => <th key={i} style={{ padding: '4px 8px', textAlign: 'left', color: '#aaa', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', borderBottom: '1px solid #f0f0f0' }}>{c}</th>)}</tr></thead>
+            <tbody>{data.rows.slice(0, 5).map((row, i) => (
+              <tr key={i}>{row.map((cell, j) => <td key={j} style={{ padding: '5px 8px', borderBottom: '1px solid #fafafa', color: '#555' }}>{fmtNum(cell)}</td>)}</tr>
+            ))}</tbody>
+          </table>
+        )}
+      </div>
+
+      {state === 'ok' && (
+        <div className="widget-footer">
+          <span className="widget-date">{runDate ? fmtDate(runDate) : ''}</span>
+          <button onClick={run} style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer', color: '#888' }}>↻ Обновить</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Add panel ─────────────────────────────────────────────────────
+function AddPanel({ reports, activeIds, onAdd, onClose }) {
+  return (
+    <div className="add-panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="add-panel">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h2 style={{ margin: 0 }}>Добавить виджет</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', fontSize: 22 }}>✕</button>
+        </div>
+        {reports.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#ccc', padding: '40px 0', fontSize: 13 }}>
+            Нет отчётов. <a href="reports.html" style={{ color: 'var(--brand-green)', fontWeight: 600 }}>Создайте первый →</a>
+          </div>
+        ) : (
+          <div className="report-pick">
+            {reports.map(r => (
+              <div key={r.id} className={`report-pick-item ${activeIds.includes(r.id) ? 'added' : ''}`} onClick={() => { onAdd(r); onClose(); }}>
+                <span className="rpi-icon">{CHART_ICONS[r.chart_type] || '📋'}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="rpi-name">{r.name}</div>
+                  <div className="rpi-q">{r.question}</div>
+                </div>
+                {activeIds.includes(r.id) && <span style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>добавлен</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────────
+function App() {
+  const [reports, setReports]     = useState([]);
+  const [widgetIds, setWidgetIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dashboard_widgets') || '[]'); } catch { return []; }
+  });
+  const [showAdd, setShowAdd]     = useState(false);
+  const [dragId, setDragId]       = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+  const [unread, setUnread]       = useState(0);
+
+  useEffect(() => {
+    fetch(`${API}/reports`).then(r => r.json()).then(setReports).catch(() => {});
+    fetch(`${API}/inbox/unread_count`).then(r => r.json()).then(d => setUnread(d.count || 0)).catch(() => {});
+  }, []);
+
+  const save = (ids) => {
+    setWidgetIds(ids);
+    localStorage.setItem('dashboard_widgets', JSON.stringify(ids));
+  };
+
+  const addWidget = (report) => {
+    if (!widgetIds.includes(report.id)) save([...widgetIds, report.id]);
+  };
+
+  const removeWidget = (id) => save(widgetIds.filter(x => x !== id));
+
+  // Drag-and-drop reorder
+  const onDragStart = (id) => setDragId(id);
+  const onDragOver  = (e, id) => { e.preventDefault(); setDragOverId(id); };
+  const onDrop      = (e, id) => {
+    e.preventDefault();
+    if (dragId === null || dragId === id) { setDragId(null); setDragOverId(null); return; }
+    const arr = [...widgetIds];
+    const from = arr.indexOf(dragId);
+    const to   = arr.indexOf(id);
+    if (from !== -1 && to !== -1) { arr.splice(from, 1); arr.splice(to, 0, dragId); save(arr); }
+    setDragId(null); setDragOverId(null);
+  };
+  const onDragEnd = () => { setDragId(null); setDragOverId(null); };
+
+  const widgets = widgetIds.map(id => reports.find(r => r.id === id)).filter(Boolean);
+
+  return (
+    <div className="layout">
+      <nav className="sidebar">
+        <div className="logo">
+          <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" />
+        </div>
+        <a href="index.html" className="btn-new-chat">
+          <svg className="icon-svg" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Новый чат
+        </a>
+        <div className="nav-menu">
+          <a href="index.html" className="nav-item">
+            <svg className="icon-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Чат
+          </a>
+          <a href="reports.html" className="nav-item">
+            <svg className="icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Отчёты
+            {unread > 0 && <span className="nav-badge">{unread}</span>}
+          </a>
+          <div className="nav-item active">
+            <svg className="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Дашборд
+          </div>
+        </div>
+      </nav>
+
+      <div className="main">
+        <div className="dash-header">
+          <div>
+            <div className="dash-title">Дашборд</div>
+            <div className="dash-subtitle">Виджеты из ваших отчётов — перетаскивайте чтобы менять порядок</div>
+          </div>
+          <button
+            onClick={() => setShowAdd(true)}
+            style={{ background: 'var(--brand-green)', border: 'none', borderRadius: 14, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            + Добавить виджет
+          </button>
+        </div>
+
+        <div className="dash-content">
+          {widgets.length === 0 ? (
+            <div className="dash-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              <h3>Дашборд пуст</h3>
+              <p>Добавьте виджеты из ваших отчётов — они будут показывать актуальные данные</p>
+              <button onClick={() => setShowAdd(true)} style={{ marginTop: 8, background: 'var(--brand-green)', border: 'none', borderRadius: 12, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                + Добавить первый виджет
+              </button>
+            </div>
+          ) : (
+            <div className="widget-grid">
+              {widgets.map(report => (
+                <div
+                  key={report.id}
+                  draggable
+                  onDragStart={() => onDragStart(report.id)}
+                  onDragOver={(e) => onDragOver(e, report.id)}
+                  onDrop={(e) => onDrop(e, report.id)}
+                  onDragEnd={onDragEnd}
+                  className={`${dragId === report.id ? 'dragging' : ''} ${dragOverId === report.id && dragId !== report.id ? 'drag-over' : ''}`}
+                  style={{ borderRadius: 20 }}
+                >
+                  <Widget
+                    report={report}
+                    onRemove={() => removeWidget(report.id)}
+                    dragHandlers={{}}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showAdd && (
+        <AddPanel
+          reports={reports}
+          activeIds={widgetIds}
+          onAdd={addWidget}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

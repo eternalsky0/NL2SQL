@@ -256,6 +256,19 @@ def _init_app_tables():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT, content TEXT, query_text TEXT, created_at TEXT
         );
+        CREATE TABLE IF NOT EXISTS alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            report_id INTEGER,
+            operator TEXT NOT NULL,
+            threshold REAL NOT NULL,
+            recipients TEXT DEFAULT '[]',
+            enabled INTEGER DEFAULT 1,
+            last_checked_at TEXT,
+            last_triggered_at TEXT,
+            last_value REAL,
+            created_at TEXT
+        );
     """)
     # migration: add category column if missing
     try:
@@ -285,6 +298,7 @@ async def lifespan(app: FastAPI):
     reports_store.init_db()
     _scheduler = ReportScheduler(execute_sql=_run_sql)
     _scheduler.start()
+    _scheduler._scheduler.add_job(_check_alerts, "interval", minutes=15, id="alert_checker", replace_existing=True)
     yield
     if _scheduler:
         _scheduler.shutdown()
@@ -314,6 +328,21 @@ class PostReq(BaseModel):
     content: str
     query_text: str
     category: str = "Аналитика"
+
+class AlertReq(BaseModel):
+    name: str
+    report_id: int
+    operator: str  # '<', '>', '<=', '>=', '='
+    threshold: float
+    recipients: List[str] = []
+    enabled: bool = True
+
+class AlertUpdate(BaseModel):
+    name: Optional[str] = None
+    operator: Optional[str] = None
+    threshold: Optional[float] = None
+    recipients: Optional[List[str]] = None
+    enabled: Optional[bool] = None
 
 class GhostReq(BaseModel):
     prefix: str
@@ -643,6 +672,105 @@ async def get_run_detail(report_id: int, run_id: int):
     if not run:
         raise HTTPException(404, "Run not found")
     return run
+
+@app.get("/reports/{report_id}/last_result")
+async def get_last_result(report_id: int):
+    runs = reports_store.list_runs(report_id)
+    for run in runs:
+        if run.get("status") == "success":
+            detail = reports_store.get_run(run["id"])
+            snap = detail.get("data_snapshot") if detail else None
+            if snap and snap.get("columns"):
+                return {"ok": True, "data": snap, "run": run}
+    return {"ok": False}
+
+
+# ── Alerts ────────────────────────────────────────────────────────
+def _alert_row(r):
+    return {
+        "id": r[0], "name": r[1], "report_id": r[2], "operator": r[3],
+        "threshold": r[4], "recipients": json.loads(r[5] or "[]"),
+        "enabled": bool(r[6]), "last_checked_at": r[7],
+        "last_triggered_at": r[8], "last_value": r[9], "created_at": r[10],
+    }
+
+@app.get("/alerts")
+async def list_alerts():
+    con = _get_conn()
+    rows = con.execute("SELECT id,name,report_id,operator,threshold,recipients,enabled,last_checked_at,last_triggered_at,last_value,created_at FROM alerts ORDER BY created_at DESC").fetchall()
+    con.close()
+    return [_alert_row(r) for r in rows]
+
+@app.post("/alerts")
+async def create_alert(req: AlertReq):
+    con = _get_conn()
+    cur = con.execute(
+        "INSERT INTO alerts (name,report_id,operator,threshold,recipients,enabled,created_at) VALUES (?,?,?,?,?,?,?)",
+        (req.name, req.report_id, req.operator, req.threshold, json.dumps(req.recipients), int(req.enabled), datetime.now().isoformat())
+    )
+    row = con.execute("SELECT id,name,report_id,operator,threshold,recipients,enabled,last_checked_at,last_triggered_at,last_value,created_at FROM alerts WHERE id=?", (cur.lastrowid,)).fetchone()
+    con.commit(); con.close()
+    return _alert_row(row)
+
+@app.patch("/alerts/{alert_id}")
+async def update_alert(alert_id: int, req: AlertUpdate):
+    fields = {k: v for k, v in req.model_dump().items() if v is not None}
+    if "recipients" in fields:
+        fields["recipients"] = json.dumps(fields["recipients"])
+    if "enabled" in fields:
+        fields["enabled"] = int(fields["enabled"])
+    if not fields:
+        raise HTTPException(400, "No fields")
+    set_clause = ", ".join(f"{k}=?" for k in fields)
+    con = _get_conn()
+    con.execute(f"UPDATE alerts SET {set_clause} WHERE id=?", (*fields.values(), alert_id))
+    row = con.execute("SELECT id,name,report_id,operator,threshold,recipients,enabled,last_checked_at,last_triggered_at,last_value,created_at FROM alerts WHERE id=?", (alert_id,)).fetchone()
+    con.commit(); con.close()
+    if not row:
+        raise HTTPException(404, "Alert not found")
+    return _alert_row(row)
+
+@app.delete("/alerts/{alert_id}")
+async def delete_alert(alert_id: int):
+    con = _get_conn()
+    con.execute("DELETE FROM alerts WHERE id=?", (alert_id,))
+    con.commit(); con.close()
+    return {"ok": True}
+
+async def _check_alerts():
+    """Run by scheduler every 15 min — evaluate each enabled alert."""
+    con = _get_conn()
+    alerts = con.execute("SELECT id,name,report_id,operator,threshold,recipients FROM alerts WHERE enabled=1").fetchall()
+    con.close()
+    ops = {"<": lambda a,b: a<b, ">": lambda a,b: a>b, "<=": lambda a,b: a<=b, ">=": lambda a,b: a>=b, "=": lambda a,b: a==b}
+    for alert_id, name, report_id, operator, threshold, recipients_json in alerts:
+        try:
+            report = reports_store.get_report(report_id)
+            if not report:
+                continue
+            result = _run_sql(report.sql)
+            if not result.get("rows"):
+                continue
+            value = result["rows"][0][0]
+            if value is None or not isinstance(value, (int, float)):
+                continue
+            value = float(value)
+            now = datetime.now().isoformat()
+            triggered = ops.get(operator, lambda a,b: False)(value, threshold)
+            con = _get_conn()
+            con.execute("UPDATE alerts SET last_checked_at=?, last_value=?, last_triggered_at=? WHERE id=?",
+                        (now, value, now if triggered else None, alert_id))
+            if triggered:
+                msg = f"Алерт «{name}»: значение {value:g} {operator} {threshold:g}"
+                reports_store.create_delivery(
+                    report_id=report_id,
+                    subject=f"⚠️ Алерт: {name}",
+                    preview=msg,
+                    channel="inapp",
+                )
+            con.commit(); con.close()
+        except Exception:
+            pass
 
 
 # ── Cron ─────────────────────────────────────────────────────────
