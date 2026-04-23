@@ -25,12 +25,6 @@
     * { box-sizing: border-box; font-family: 'Noto Sans', sans-serif; -webkit-font-smoothing: antialiased; }
     body, html { margin: 0; padding: 0; background: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; }
 
-    /* LOGIN */
-    .login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; background: var(--bg-main); }
-    .login-card { background: #fff; padding: 48px; border-radius: 32px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); text-align: center; }
-    .login-input { width: 100%; padding: 16px; margin-bottom: 12px; border: 1.5px solid var(--border-color); border-radius: 14px; font-size: 15px; outline: none; transition: 0.2s; }
-    .login-input:focus { border-color: var(--brand-green); }
-
     .layout { display: flex; height: 100vh; }
 
     /* SIDEBAR */
@@ -59,7 +53,7 @@
     .chat-item { 
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 16px; border-radius: 12px; cursor: pointer; font-size: 13.5px; 
-      color: #555; transition: 0.2s; group;
+      color: #555; transition: 0.2s;
     }
     .chat-item:hover { background: #f5f5f7; }
     .chat-item.active { background: #f0f0f2; color: #000; font-weight: 600; }
@@ -67,17 +61,16 @@
     
     .btn-del-chat { opacity: 0; transition: 0.2s; padding: 4px; border-radius: 6px; }
     .chat-item:hover .btn-del-chat { opacity: 0.3; }
-    .btn-del-chat:hover { opacity: 1 !important; background: #fee2e2; color: #ef4444; }
+    .btn-del-chat:hover { opacity: 1 !important; color: #ef4444; }
 
     .user-profile { margin-top: auto; padding: 16px 12px 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
     .user-name { font-size: 13px; font-weight: 700; }
     .btn-logout { cursor: pointer; opacity: 0.4; font-size: 12px; font-weight: 600; }
-    .btn-logout:hover { opacity: 1; color: #ff4d4f; }
 
     /* MAIN AREA */
     .main-area { flex-grow: 1; display: flex; flex-direction: column; background: #fff; overflow: hidden; position: relative; }
     
-    /* CHAT VIEW */
+    /* MESSAGES */
     .messages-container { flex-grow: 1; overflow-y: auto; padding: 40px 18% 160px 18%; display: flex; flex-direction: column; gap: 40px; scroll-behavior: smooth; }
     .msg-user { align-self: flex-end; max-width: 80%; background: #f4f4f7; padding: 16px 24px; border-radius: 20px 20px 4px 20px; font-size: 15px; line-height: 1.5; }
     .msg-bot { align-self: flex-start; width: 100%; display: flex; flex-direction: column; gap: 16px; }
@@ -85,11 +78,11 @@
     .bot-text { font-size: 15px; color: #444; line-height: 1.6; flex-grow: 1; }
     .btn-save-report { background: #1e1e1e; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 500; font-size: 12px; cursor: pointer; flex-shrink: 0; }
 
-    /* CARDS */
+    /* RESULT CARDS */
     .result-card { background: #fff; border: 1px solid var(--border-color); border-radius: 24px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.03); margin-top: 8px; }
     .kpi-value { font-size: 64px; font-weight: 800; color: var(--text-main); letter-spacing: -3px; line-height: 1; margin: 15px 0; }
 
-    /* INPUT */
+    /* INPUT SYSTEM */
     .input-dock { position: absolute; bottom: 0; left: 0; right: 0; padding: 32px 18% 48px 18%; background: linear-gradient(to top, #fff 80%, transparent); }
     .input-box { position: relative; display: flex; align-items: center; background: #fff; border: 1.5px solid var(--border-color); border-radius: 100px; padding: 6px 6px 6px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
     .input-box:focus-within { border-color: var(--brand-green); }
@@ -98,30 +91,31 @@
     .ghost-text span { color: transparent; }
     .btn-send { background: var(--brand-green); border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
 
-    /* GRID ARCHIVE */
-    .archive-grid { 
-      padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
-      gap: 24px; background: var(--bg-main); height: 100%; overflow-y: auto; align-items: start;
-    }
+    /* COMMUNITY FEED */
+    .community-view { flex-grow: 1; overflow-y: auto; background: var(--bg-main); padding: 40px; }
+    .post-composer { background: #fff; padding: 24px; border-radius: 24px; margin-bottom: 40px; border: 1px solid var(--border-color); max-width: 800px; margin-left: auto; margin-right: auto; }
+    .post-input { width: 100%; border: none; outline: none; font-size: 16px; resize: none; margin-bottom: 16px; }
+    .post-query-input { width: 100%; background: #f9f9f9; padding: 12px 16px; border-radius: 12px; border: 1px solid #eee; font-size: 13px; font-family: monospace; outline: none; margin-bottom: 16px; }
+    
+    .post-card { background: #fff; padding: 32px; border-radius: 24px; border: 1px solid var(--border-color); margin-bottom: 24px; max-width: 800px; margin-left: auto; margin-right: auto; position: relative; }
+    .post-user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .post-avatar { width: 36px; height: 36px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+    .post-content { font-size: 15px; line-height: 1.6; margin-bottom: 20px; color: #333; }
+    .post-query-preview { background: #f5f5f7; padding: 16px; border-radius: 12px; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 16px; }
+
+    /* ARCHIVE GRID */
+    .archive-grid { padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; background: var(--bg-main); height: 100%; overflow-y: auto; align-items: start; }
     .archive-card { background: #fff; padding: 24px; border-radius: 20px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; position: relative; }
     .archive-card:hover { border-color: var(--brand-green); transform: translateY(-2px); }
-    .archive-card h4 { margin: 0 0 8px 0; font-size: 16px; font-weight: 700; padding-right: 30px; }
-    .archive-card p { margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    .archive-card-date { margin-top: 16px; font-size: 10px; color: #ccc; font-weight: 700; text-transform: uppercase; }
 
-    /* LOADER */
-    .spinner-box { display: flex; align-items: center; gap: 12px; margin-top: 10px; color: #888; font-size: 14px; }
+    /* LOADER & UTILS */
+    .spinner-box { display: flex; align-items: center; gap: 12px; margin-top: 10px; color: #888; }
     .spinner { border: 2px solid #f3f3f3; border-top: 2px solid var(--brand-green); border-radius: 50%; width: 22px; height: 22px; animation: spin 0.8s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    /* TABLE */
-    .table-holder { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-top: 20px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: #fafafa; padding: 12px 16px; text-align: left; color: #888; font-weight: 600; border-bottom: 1px solid var(--border-color); }
-    td { padding: 12px 16px; border-bottom: 1px solid #f2f2f2; }
-
-    /* ICONS */
     .icon-svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+    
+    .login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; background: var(--bg-main); }
+    .login-card { background: #fff; padding: 48px; border-radius: 32px; width: 400px; text-align: center; }
   </style>
 </head>
 <body>
@@ -138,7 +132,8 @@ const Icons = {
   Community: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m14 10v-2a4 4 0 0 0-3-3.87"/></svg>,
   Settings: () => <svg className="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
   Trash: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-  Send: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+  Send: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>,
+  Check: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
 };
 
 function ChartView({ columns, rows }) {
@@ -167,46 +162,55 @@ function App() {
   const [input, setInput] = useState("");
   const [ghost, setGhost] = useState("");
   const [loading, setLoading] = useState(false);
+  const [posts, setPosts] = useState([]);
   const scrollRef = useRef(null);
 
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages, loading]);
-  useEffect(() => { if (user) loadChats(); }, [user, view]);
+  useEffect(() => { if (user) { loadChats(); loadCommunity(); } }, [user, view]);
 
   const loadChats = async () => {
-    try {
-      const res = await fetch(`${API}/chats/${user.username}`);
-      setChats(await res.json());
-    } catch(e) {}
+    try { const res = await fetch(`${API}/chats/${user.username}`); setChats(await res.json()); } catch(e) {}
+  };
+
+  const loadCommunity = async () => {
+    try { const res = await fetch(`${API}/community`); setPosts(await res.json()); } catch(e) {}
+  };
+
+  const shareInsight = async (e) => {
+    e.preventDefault();
+    const content = e.target.content.value;
+    const query = e.target.query.value;
+    if (!content || !query) return;
+    
+    await fetch(`${API}/community`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ username: user.username, content, query_text: query })
+    });
+    e.target.reset();
+    loadCommunity();
   };
 
   const selectChat = async (id) => {
-    setCurrentChatId(id);
-    setLoading(true);
-    setView("chat");
-    try {
-        const res = await fetch(`${API}/chats/history/${id}`);
-        setMessages(await res.json());
-    } catch(e) {}
+    setCurrentChatId(id); setLoading(true); setView("chat");
+    try { const res = await fetch(`${API}/chats/history/${id}`); setMessages(await res.json()); } catch(e) {}
     setLoading(false);
   };
 
-  const deleteChat = async (e, id) => {
-    e.stopPropagation();
-    if (!confirm("Удалить этот чат?")) return;
+  const ask = async (text) => {
+    if (!text.trim()) return;
+    setMessages(prev => [...prev, {role: "user", content: text}]);
+    setInput(""); setGhost(""); setLoading(true); setView("chat");
     try {
-      const res = await fetch(`${API}/chats/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        if (currentChatId === id) startNewChat();
-        loadChats();
-      }
-    } catch (e) { alert("Ошибка удаления"); }
-  };
-
-  const startNewChat = () => {
-    setCurrentChatId(null);
-    setMessages([]);
-    setInput("");
-    setView("chat");
+      const res = await fetch(`${API}/query`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ chat_id: currentChatId, username: user.username, question: text, history: messages.map(m => ({role: m.role, content: m.content})) })
+      });
+      const data = await res.json();
+      if (res.ok) { setMessages(prev => [...prev, data]); if (!currentChatId) { setCurrentChatId(data.chat_id); loadChats(); } }
+      else { throw new Error(data.detail); }
+    } catch (e) { setMessages(prev => [...prev, {role: 'assistant', content: "Ошибка: " + e.message, error: true}]); }
+    setLoading(false);
   };
 
   const handleLogin = async (e) => {
@@ -216,47 +220,9 @@ function App() {
             method: "POST", headers: {"Content-Type": "application/json"},
             body: JSON.stringify({username: e.target.username.value, password: e.target.password.value})
         });
-        if (res.ok) {
-            const data = await res.json();
-            localStorage.setItem('user', JSON.stringify(data));
-            setUser(data);
-        } else alert("Неверные данные");
+        if (res.ok) { const data = await res.json(); localStorage.setItem('user', JSON.stringify(data)); setUser(data); }
+        else alert("Неверные данные");
     } catch(e) { alert("Сервер недоступен"); }
-  };
-
-  const handleSave = async (res) => {
-    const suggestion = res.explanation.split(/[.,]/)[0].trim();
-    const name = prompt("Назовите этот отчет для архива:", suggestion);
-    if (name) alert("Отчет '" + name + "' доступен в разделе Архив");
-  };
-
-  const ask = async (text) => {
-    if (!text.trim()) return;
-    setMessages(prev => [...prev, {role: 'user', content: text}]);
-    setInput(""); setGhost(""); setLoading(true);
-
-    try {
-      const res = await fetch(`${API}/query`, {
-        method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ 
-            chat_id: currentChatId, 
-            username: user.username, 
-            question: text,
-            history: messages.map(m => ({role: m.role, content: m.content}))
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessages(prev => [...prev, data]);
-        if (!currentChatId) {
-            setCurrentChatId(data.chat_id);
-            loadChats();
-        }
-      } else { throw new Error(data.detail); }
-    } catch (e) {
-      setMessages(prev => [...prev, {role: 'assistant', content: "Ошибка: " + e.message, error: true}]);
-    }
-    setLoading(false);
   };
 
   const fetchGhost = async (text) => {
@@ -291,36 +257,27 @@ function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="logo" onClick={startNewChat}>
+        <div className="logo" onClick={() => {setCurrentChatId(null); setMessages([]); setView("chat");}}>
           <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" />
         </div>
-        
-        <button className="btn-new-chat" onClick={startNewChat}>
-          <Icons.Plus /> Новый чат
-        </button>
-
+        <button className="btn-new-chat" onClick={() => {setCurrentChatId(null); setMessages([]); setView("chat");}}><Icons.Plus /> Новый чат</button>
         <nav className="nav-menu">
            <div className={`nav-item ${view === 'chat' ? 'active' : ''}`} onClick={() => setView('chat')}><Icons.Chat /> Чат</div>
            <div className={`nav-item ${view === 'archive' ? 'active' : ''}`} onClick={() => setView('archive')}><Icons.Archive /> Архив</div>
            <div className={`nav-item ${view === 'community' ? 'active' : ''}`} onClick={() => setView('community')}><Icons.Community /> Сообщество</div>
            <div className={`nav-item ${view === 'automation' ? 'active' : ''}`} onClick={() => setView('automation')}><Icons.Settings /> Автоматизация</div>
         </nav>
-
         <div className="history-label">НЕДАВНИЕ</div>
         <div className="chat-list">
           {chats.map(c => (
             <div key={c.id} className={`chat-item ${currentChatId === c.id && view === 'chat' ? 'active' : ''}`} onClick={() => selectChat(c.id)}>
               <div className="chat-item-title">{c.title}</div>
-              <div className="btn-del-chat" onClick={(e) => deleteChat(e, c.id)}><Icons.Trash /></div>
+              <div className="btn-del-chat" onClick={(e) => {e.stopPropagation(); fetch(`${API}/chats/${c.id}`, {method:"DELETE"}).then(loadChats);}}><Icons.Trash /></div>
             </div>
           ))}
         </div>
-
         <div className="user-profile">
-          <div className="user-info">
-            <div className="user-name">{user.username}</div>
-            <div style={{fontSize:10, color:'#ccc', textTransform:'uppercase'}}>{user.role}</div>
-          </div>
+          <div className="user-name">{user.username}</div>
           <div className="btn-logout" onClick={() => {localStorage.clear(); window.location.reload();}}>Выйти</div>
         </div>
       </aside>
@@ -338,7 +295,7 @@ function App() {
                 <div key={idx} className={m.role === 'user' ? 'msg-user' : 'msg-bot'}>
                   <div className="bot-header">
                     <div className="bot-text">{m.content}</div>
-                    {m.data && <button className="btn-save-report" onClick={() => handleSave(m.data)}>Сохранить</button>}
+                    {m.data && <button className="btn-save-report" onClick={() => alert("Сохранено в архив")}>В архив</button>}
                   </div>
                   {m.data && !m.error && (
                     <div className="result-card">
@@ -358,29 +315,16 @@ function App() {
                           </div>
                         </>
                       )}
-                      {user.role === 'admin' && (
-                        <div style={{marginTop:20, fontSize:10, color:'#ccc', fontFamily:'monospace'}}>ADMIN SQL: {m.data.sql}</div>
-                      )}
                     </div>
                   )}
                 </div>
               ))}
               {loading && <div className="msg-bot"><div className="spinner-box"><div className="spinner"></div> Считаю...</div></div>}
             </div>
-
             <div className="input-dock">
               <div className="input-box">
                 <div className="ghost-text"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
-                <input 
-                  className="input-field" 
-                  placeholder="Спроси Drivee..." 
-                  value={input} 
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
-                    if (e.key === 'Enter') ask(input);
-                  }}
-                />
+                <input className="input-field" placeholder="Спроси Drivee..." value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if(e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); } if(e.key === 'Enter') ask(input); }} />
                 <button className="btn-send" onClick={() => ask(input)}><Icons.Send /></button>
               </div>
             </div>
@@ -389,24 +333,35 @@ function App() {
           <div className="archive-grid">
              {chats.map(c => (
               <div key={c.id} className="archive-card" onClick={() => selectChat(c.id)}>
-                <div style={{position:'absolute', top:20, right:20, opacity:0.2}} onClick={(e) => deleteChat(e, c.id)}><Icons.Trash /></div>
                 <h4>{c.title}</h4>
-                <p>{c.title}</p>
-                <div className="archive-card-date">{new Date(c.created_at).toLocaleDateString()}</div>
+                <p>Дата создания: {new Date(c.created_at).toLocaleDateString()}</p>
               </div>
             ))}
           </div>
         ) : view === "community" ? (
-            <div style={{padding:40, maxWidth:800, margin:'0 auto'}}>
-                <div className="archive-card" style={{padding: 32, cursor: 'default'}}>
-                    <div style={{display:'flex', gap:12, marginBottom:20}}>
-                        <div style={{width:32, height:32, borderRadius:16, background:'#eee'}}></div>
-                        <div><div style={{fontWeight:700, fontSize: 14}}>Алина К.</div><div style={{fontSize:12, color:'#8e8e93'}}>Product Analyst</div></div>
+            <div className="community-view">
+                <form className="post-composer" onSubmit={shareInsight}>
+                    <textarea name="content" className="post-input" placeholder="Поделитесь инсайтом или находкой..." rows="2" required></textarea>
+                    <input name="query" className="post-query-input" placeholder="Приложите запрос (например: Выручка по городам за вчера)" required />
+                    <div style={{display:'flex', justifyContent:'flex-end'}}>
+                        <button type="submit" className="btn-new-chat" style={{marginBottom:0, padding:'8px 24px'}}>Поделиться</button>
                     </div>
-                    <p style={{fontSize: 15, color: '#1e1e1e', marginBottom: 20}}>Заметила аномалию выручки в Якутске. Похоже на влияние погоды.</p>
-                    <div style={{background:'#f5f5f7', padding:20, borderRadius:12, marginBottom:16, fontSize: 13}}><b>Запрос:</b> Выручка по часам в г. Якутск</div>
-                    <button className="btn-new-chat" style={{padding:'8px 16px', fontSize:12, marginBottom:0}} onClick={() => ask("Выручка по часам в Якутске")}>Использовать</button>
-                </div>
+                </form>
+                
+                {posts.map(post => (
+                    <div key={post.id} className="post-card">
+                        <div className="post-user-info">
+                            <div className="post-avatar">{post.username[0].toUpperCase()}</div>
+                            <div>
+                                <div style={{fontWeight:800, fontSize:14}}>{post.username}</div>
+                                <div style={{fontSize:11, color:'#aaa'}}>{new Date(post.created_at).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div className="post-content">{post.content}</div>
+                        <div className="post-query-preview">Запрос: {post.query_text}</div>
+                        <button className="btn-new-chat" style={{marginBottom:0, fontSize:12, padding:'6px 16px', background:'#f0f0f2', color:'#000'}} onClick={() => ask(post.query_text)}>Использовать</button>
+                    </div>
+                ))}
             </div>
         ) : (
             <div style={{padding:40, maxWidth:600, margin:'0 auto'}}>
