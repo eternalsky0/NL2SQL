@@ -10,7 +10,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     :root {
       --brand-green: #96ea28;
@@ -209,6 +211,14 @@
 
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 3px; }
+
+    /* EXPORT MENU */
+    .export-btn { background: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: #888; font-family: inherit; display: flex; align-items: center; gap: 6px; transition: 0.15s; white-space: nowrap; }
+    .export-btn:hover { border-color: #bbb; color: #444; }
+    .export-dropdown { position: absolute; right: 0; top: calc(100% + 6px); background: #fff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); overflow: hidden; z-index: 200; min-width: 160px; }
+    .export-option { display: block; width: 100%; padding: 10px 16px; background: none; border: none; text-align: left; cursor: pointer; font-size: 13px; color: #444; font-family: inherit; display: flex; align-items: center; gap: 10px; }
+    .export-option:hover { background: #f5f5f7; }
+    .export-option-icon { font-size: 15px; width: 20px; text-align: center; }
   </style>
 </head>
 <body>
@@ -228,6 +238,38 @@ const Icons = {
   Send: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
   Reports: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
 };
+
+// ── Column name translations ─────────────────────────────────────
+const COL_NAMES = {
+  city_id: "Город",
+  order_id: "ID заказа",
+  tender_id: "ID тендера",
+  user_id: "ID клиента",
+  driver_id: "ID водителя",
+  offset_hours: "Часовой пояс",
+  status_order: "Статус заказа",
+  status_tender: "Статус тендера",
+  order_timestamp: "Время заказа",
+  tender_timestamp: "Время тендера",
+  driveraccept_timestamp: "Принятие водителем",
+  driverarrived_timestamp: "Прибытие водителя",
+  driverstarttheride_timestamp: "Начало поездки",
+  driverdone_timestamp: "Завершение поездки",
+  clientcancel_timestamp: "Отмена клиентом",
+  drivercancel_timestamp: "Отмена водителем",
+  order_modified_local: "Изменение заказа",
+  cancel_before_accept_local: "Отмена до принятия",
+  distance_in_meters: "Дистанция (м)",
+  duration_in_seconds: "Длительность (с)",
+  price_order_local: "Цена заказа",
+  price_tender_local: "Цена тендера",
+  price_start_local: "Стартовая цена",
+};
+
+function colName(raw) {
+  const key = String(raw).toLowerCase().trim();
+  return COL_NAMES[key] || raw;
+}
 
 // ── Format numbers ──────────────────────────────────────────────
 function fmt(v) {
@@ -270,6 +312,152 @@ function ChartView({ columns, rows }) {
   return <div style={{height: 220}}><canvas ref={canvasRef} /></div>;
 }
 
+// ── Export utilities ─────────────────────────────────────────────
+async function exportPNG(element, filename) {
+  const canvas = await html2canvas(element, { backgroundColor: '#fff', scale: 2, useCORS: true });
+  const link = document.createElement('a');
+  link.download = filename + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function exportPDF(element, filename) {
+  const canvas = await html2canvas(element, { backgroundColor: '#fff', scale: 2, useCORS: true });
+  const imgData = canvas.toDataURL('image/png');
+  const { jsPDF } = window.jspdf;
+  const w = canvas.width / 2;
+  const h = canvas.height / 2;
+  const pdf = new jsPDF({ orientation: w > h ? 'landscape' : 'portrait', unit: 'px', format: [w, h] });
+  pdf.addImage(imgData, 'PNG', 0, 0, w, h);
+  pdf.save(filename + '.pdf');
+}
+
+function exportCSV(columns, rows, filename) {
+  const escape = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const csv = [columns.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename + '.csv';
+  link.click();
+}
+
+function exportHTML(columns, rows, chartType, explanation, sql) {
+  const isChart = chartType && chartType !== 'table' && columns.length >= 2;
+  const colorsArr = ['#96ea28','#1e1e1e','#4ade80','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6'];
+  const chartBlock = isChart ? `
+  <div style="max-width:700px;margin:0 auto 32px;">
+    <canvas id="chart" style="max-height:320px;"></canvas>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>
+  <script>
+    new Chart(document.getElementById('chart'), {
+      type: ${JSON.stringify(chartType === 'line' ? 'line' : chartType === 'pie' ? 'pie' : 'bar')},
+      data: {
+        labels: ${JSON.stringify(rows.slice(0,15).map(r => String(r[0])))},
+        datasets: [{ label: ${JSON.stringify(columns[1] || '')},
+          data: ${JSON.stringify(rows.slice(0,15).map(r => Number(r[1]) || 0))},
+          backgroundColor: ${chartType === 'pie' ? JSON.stringify(colorsArr) : JSON.stringify('#96ea28')},
+          borderColor: '#96ea28', borderRadius: 6, tension: 0.4,
+          fill: ${chartType === 'line' ? 'true' : 'false'}
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: ${chartType === 'pie' ? 'true' : 'false'} } } }
+    });
+  <\/script>` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Drivee Analytics Export</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 960px; margin: 40px auto; padding: 0 24px; color: #1e1e1e; }
+    h2 { font-size: 18px; color: #333; font-weight: 500; margin-bottom: 8px; line-height: 1.5; }
+    .meta { font-size: 11px; color: #aaa; margin-bottom: 28px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 8px 12px; text-align: left; background: #f9f9f9; color: #888; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #ebebeb; }
+    td { padding: 8px 12px; border-bottom: 1px solid #f5f5f7; color: #444; }
+    tr:last-child td { border-bottom: none; }
+    .sql { background: #f8f8fa; border: 1px solid #ebebeb; border-radius: 8px; padding: 14px 18px; font-family: monospace; font-size: 12px; color: #555; margin-top: 28px; white-space: pre; overflow-x: auto; line-height: 1.6; }
+    .sql-label { font-size: 11px; color: #aaa; font-weight: 700; text-transform: uppercase; margin-top: 28px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  ${explanation ? `<h2>${explanation.replace(/</g,'&lt;')}</h2>` : ''}
+  <div class="meta">Drivee Analytics · Экспортировано ${new Date().toLocaleString('ru-RU')}</div>
+  ${chartBlock}
+  <table>
+    <thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${r.map(cell => `<td>${cell ?? '—'}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table>
+  ${sql ? `<div class="sql-label">SQL-запрос</div><div class="sql">${sql.replace(/</g,'&lt;')}</div>` : ''}
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'drivee-' + new Date().toISOString().slice(0,10) + '.html';
+  link.click();
+}
+
+// ── Export menu component ─────────────────────────────────────────
+function ExportMenu({ cardRef, columns, rows, chartType, explanation, sql }) {
+  const [open, setOpen] = useState(false);
+  const [exporting, setExporting] = useState(null);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!wrapRef.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  const run = async (type) => {
+    setOpen(false);
+    setExporting(type);
+    try {
+      const ts = new Date().toISOString().slice(0, 10);
+      if (type === 'png') await exportPNG(cardRef.current, `drivee-${ts}`);
+      else if (type === 'pdf') await exportPDF(cardRef.current, `drivee-${ts}`);
+      else if (type === 'csv') exportCSV(columns, rows, `drivee-${ts}`);
+      else if (type === 'html') exportHTML(columns, rows, chartType, explanation, sql);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const options = [
+    { t: 'png', icon: '🖼', label: 'PNG — картинка' },
+    { t: 'pdf', icon: '📄', label: 'PDF — документ' },
+    { t: 'html', icon: '🌐', label: 'HTML — страница' },
+    { t: 'csv', icon: '📊', label: 'CSV — таблица' },
+  ];
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <button className="export-btn" onClick={() => setOpen(v => !v)}>
+        {exporting
+          ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 1.5 }} />
+          : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        }
+        {exporting ? `Экспорт…` : 'Скачать'}
+      </button>
+      {open && (
+        <div className="export-dropdown">
+          {options.map(({ t, icon, label }) => (
+            <button key={t} className="export-option" onClick={() => run(t)}>
+              <span className="export-option-icon">{icon}</span> {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── SQL Toggle ────────────────────────────────────────────────────
 function SqlBlock({ sql }) {
   const [open, setOpen] = useState(false);
@@ -286,6 +474,8 @@ function SqlBlock({ sql }) {
 
 // ── Bot message ───────────────────────────────────────────────────
 function BotMessage({ msg }) {
+  const cardRef = useRef(null);
+
   if (msg.error) {
     return (
       <div className="msg-bot">
@@ -309,16 +499,28 @@ function BotMessage({ msg }) {
       </div>
       {d && (
         <>
-          <div className="meta-row">
-            {d.chart_type && <span className="meta-pill">{({bar:"Столбчатый",line:"Линейный",pie:"Круговой",table:"Таблица"})[d.chart_type] || d.chart_type}</span>}
-            {d.data?.rows && <span className="meta-pill">{d.data.rows.length} строк</span>}
-            {conf != null && <span className="meta-pill">conf {Math.round(conf * 100)}%</span>}
-            {d.timings?.total_ms && <span className="meta-pill">{d.timings.total_ms} мс</span>}
+          <div className="meta-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {d.chart_type && <span className="meta-pill">{({bar:"Столбчатый",line:"Линейный",pie:"Круговой",table:"Таблица"})[d.chart_type] || d.chart_type}</span>}
+              {d.data?.rows && <span className="meta-pill">{d.data.rows.length} строк</span>}
+              {conf != null && <span className="meta-pill">conf {Math.round(conf * 100)}%</span>}
+              {d.timings?.total_ms && <span className="meta-pill">{d.timings.total_ms} мс</span>}
+            </div>
+            {hasData && (
+              <ExportMenu
+                cardRef={cardRef}
+                columns={d.data.columns}
+                rows={d.data.rows}
+                chartType={d.chart_type}
+                explanation={msg.content}
+                sql={d.sql}
+              />
+            )}
           </div>
-          <div className="result-card">
+          <div className="result-card" ref={cardRef}>
             {isKpi ? (
               <div style={{textAlign: 'center', padding: 10}}>
-                <div style={{fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em'}}>{d.data.columns[0]}</div>
+                <div style={{fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em'}}>{colName(d.data.columns[0])}</div>
                 <div className="kpi-value">{fmt(d.data.rows[0][0])}</div>
               </div>
             ) : (
@@ -326,7 +528,7 @@ function BotMessage({ msg }) {
                 {showChart && <ChartView columns={d.data.columns} rows={d.data.rows} />}
                 <div className="table-holder">
                   <table>
-                    <thead><tr>{d.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+                    <thead><tr>{d.data.columns.map((c, i) => <th key={i}>{colName(c)}</th>)}</tr></thead>
                     <tbody>
                       {d.data.rows.slice(0, 20).map((row, i) => (
                         <tr key={i}>{row.map((cell, j) => <td key={j}>{fmt(cell)}</td>)}</tr>
