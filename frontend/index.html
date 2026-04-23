@@ -187,7 +187,7 @@ function App() {
             <div className="ghost-text"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
             <input type="text" className="search-input" value={input} 
                    onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
-                   placeholder="Например: Выручка за вчера" />
+                   placeholder="Спроси Drive..." />
           </div>
           <div style={{marginBottom: '20px'}}>
             <div className="chip" onClick={() => ask("Выручка за вчера")}>Выручка за вчера</div>
@@ -246,7 +246,6 @@ function App() {
           ) : (
             <div style={{margin:'auto', color:'#9ca3af', textAlign:'center'}}>
                 <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{opacity: 0.2, height: 40, marginBottom: 20}} />
-                <br/>Введите ваш вопрос в левой панели
             </div>
           )}
         </div>
