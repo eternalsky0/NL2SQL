@@ -54,22 +54,35 @@ TABLE orders (city_id int, order_id text, tender_id text, user_id text, driver_i
 
 {get_semantic_prompt()}
 
-ПРАВИЛА:
+КРИТИЧЕСКИЕ ПРАВИЛА РАСЧЕТОВ (БИЗНЕС-ЛОГИКА):
+1. ПРЕДОТВРАЩЕНИЕ ДУБЛЕЙ: В базе на один заказ (order_id) может быть несколько тендеров (tender_id). 
+2. ВЫРУЧКА, ДИСТАНЦИЯ, ВРЕМЯ: Для расчета любых сумм или средних значений (цена, метры, секунды) ОБЯЗАТЕЛЬНО используй фильтр `WHERE status_tender = 'done'`. Если этого не сделать, данные будут завышены из-за дублей!
+3. ПОДСЧЕТ ЗАКАЗОВ: Всегда используй `COUNT(DISTINCT order_id)`.
+4. СТАТУСЫ: 
+   - Завершенная (успешная) поездка: status_order = 'done' AND status_tender = 'done'.
+   - Отмена: status_order = 'cancel'.
+   - Категории тендеров: accept, decline, cancel, done, wait.
+
+ПРАВИЛА ДЛЯ ДАТ:
+- Период данных: с 2025-01-02 по 2026-04-20. 
+- Максимальная дата в базе: '2026-04-20'.
+- Если пользователь просит "вчера", считай от даты '2026-04-20'. То есть вчера — это '2026-04-19'.
+- Если просят "за последние 7 дней", считай от '2026-04-20'.
+- Пример для "вчера": WHERE DATE(order_timestamp) = '2026-04-19'
+
+ОБЩИЕ ТЕХНИЧЕСКИЕ ПРАВИЛА:
 1. Только SELECT. Обязательно LIMIT 1000.
-2. Используй точные формулы метрик из блока МЕТРИКИ (COUNT DISTINCT, CASE WHEN).
-3. ПРАВИЛО ДЛЯ ДАТ: В базе данные за 2025/2026 годы. Если просят "за последние 7 дней" или "вчера", используй дату относительно максимума:
-   WHERE DATE(order_timestamp) >= DATE((SELECT MAX(order_timestamp) FROM orders), '-7 days')
-4. Если просят группировать "по городам", выводи city_id.
+2. Города: В базе только один город (city_id = 67). Если спрашивают про город, просто используй city_id = 67.
+3. Формат даты в SQLite: DATE(order_timestamp).
 
 ФОРМАТ ОТВЕТА - СТРОГО JSON:
 {{
   "sql": "SELECT ...",
-  "explanation": "Что я считаю и как",
+  "explanation": "краткое объяснение логики подсчета на русском",
   "chart_type": "bar | line | pie | table",
   "confidence": 0.95
 }}
 """
-
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
@@ -175,6 +188,20 @@ async def suggest_ghost(req: GhostReq):
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(iter_tokens(), media_type="text/event-stream")
+
+@app.get("/kpi")
+def kpi():
+    con = sqlite3.connect(DB_PATH)
+    df = pd.read_sql("""
+        SELECT 
+            COUNT(DISTINCT order_id) as orders,
+            SUM(CASE WHEN status_order='done' THEN 1 ELSE 0 END) as done,
+            SUM(CASE WHEN status_order='cancel' THEN 1 ELSE 0 END) as cancel
+        FROM orders
+    """, con)
+    con.close()
+
+    return df.to_dict(orient="records")[0]
 
 if __name__ == "__main__":
     import uvicorn
