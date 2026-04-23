@@ -46,63 +46,29 @@
     .chip:hover { border-color: var(--brand-green); color: #000; }
     .sql-code { background: #1f2937; color: #e5e7eb; border-radius: 10px; padding: 16px; font-family: 'Fira Code', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; margin-top: auto; max-height: 250px; overflow-y: auto; }
 
-    /* ПРАВАЯ ПАНЕЛЬ (ОБНОВЛЕННЫЙ СКРОЛЛ) */
-    .content-area { 
-      width: 65%; 
-      background: #f4f7f9; 
-      overflow-y: auto; /* Скроллится вся правая часть */
-      padding: 30px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+    /* ПРАВАЯ ПАНЕЛЬ */
+    .right-panel { width: 60%; padding: 24px; display: flex; flex-direction: column; background: #f3f4f6; overflow-y: auto; }
+    .result-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; flex-grow: 1; display: flex; flex-direction: column; min-height: 400px; }
+    .badge { background: var(--brand-green); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 
-    /* КАРТОЧКА (ОБНОВЛЕНА) */
-    .card { 
-      background: white; 
-      border-radius: 20px; 
-      padding: 30px; 
-      width: 100%;
-      min-height: min-content; /* Карточка растягивается под контент */
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    }
+    /* KPI КАРТОЧКА */
+    .kpi-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; text-align: center; }
+    .kpi-value { font-size: 72px; font-weight: 800; color: #4f46e5; margin: 10px 0; letter-spacing: -2px; }
+    .kpi-label { font-size: 16px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* СЕТКА ДЛЯ ГРАФИКА И ТАБЛИЦЫ */
+    .data-grid { display: flex; flex-direction: column; gap: 24px; flex-grow: 1; margin-top: 20px; }
+    .chart-container { height: 250px; width: 100%; }
     
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-    .badge { background: var(--brand-green); color: black; padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+    th { background: #f9fafb; padding: 10px; font-weight: 600; border-bottom: 2px solid #e5e7eb; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #f3f4f6; }
 
-    /* ТАБЛИЦА (УБРАН ВНУТРЕННИЙ СКРОЛЛ) */
-    .table-container { width: 100%; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
-    th { text-align: left; padding: 12px; border-bottom: 2px solid #f0f0f0; color: #64748b; }
-    td { padding: 12px; border-bottom: 1px solid #f8f8f8; color: #1e293b; }
-
-    /* ПЛАШКА СТАТУСА (ТЕПЕРЬ ПОСЛЕ ТАБЛИЦЫ) */
-    .status-banner { 
-      background: white; 
-      border-radius: 16px; 
-      padding: 18px 24px; 
-      display: flex; 
-      align-items: center; 
-      gap: 12px; 
-      font-weight: 600; 
-      color: #374151;
-      border: 1px solid #e2e8f0;
-      margin-bottom: 10px; /* Чтобы не прилипала к самому низу */
-    }
-    .status-icon { 
-      width: 22px; height: 22px; background: var(--brand-green); 
-      border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-      color: #000; font-size: 13px;
-    }
-
-    /* KPI */
-    .kpi-wrapper { padding: 60px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .kpi-value { font-size: 84px; font-weight: 900; color: #4f46e5; letter-spacing: -3px; }
-    .kpi-label { font-size: 18px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
-
-    .chart-box { height: 320px; width: 100%; margin-bottom: 30px; }
-
-    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-green); border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
+    .status-banner { background: #fff; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-weight: 600; color: #374151; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .status-icon { width: 20px; height: 20px; background: var(--brand-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    
+    .loader { margin: auto; text-align: center; color: var(--text-muted); }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-green); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
@@ -233,7 +199,7 @@ function App() {
 
         <div className="right-panel">
           {loading ? (
-             <div className="loader"><div className="spinner"></div>Считаем...</div>
+             <div className="loader"><div className="spinner">
           ) : result && !result.error ? (
             <>
               <div style={{marginBottom: 16, color: '#4b5563', fontSize: '14px'}}>Понял запрос как: <b>{result.explanation}</b></div>
