@@ -2,47 +2,74 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Drivee · Аналитика без SQL</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
+    :root {
+      --brand-green: #9df123;
+      --brand-green-hover: #8be01b;
+      --bg-gradient: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-color: #e5e7eb;
+      --panel-bg: #ffffff;
+    }
+
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f6f7f9; color: #1a1a1a; }
-    .app { max-width: 900px; margin: 40px auto; padding: 24px; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-    .header { font-size: 24px; font-weight: bold; margin-bottom: 24px; color: #111827; }
-    .header span { color: #A3E635; }
-    
-    .chat { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
-    .msg { padding: 16px; border-radius: 12px; line-height: 1.5; font-size: 15px; }
-    .msg.user { background: #f3f4f6; align-self: flex-end; color: #111827; font-weight: 500; }
-    .msg.bot { background: #fff; border: 1px solid #e5e7eb; width: 100%; }
+    body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-gradient); color: var(--text-main); height: 100vh; overflow: hidden; }
 
-    .input-wrap { position: relative; }
-    .input-box { width: 100%; height: 60px; padding: 18px 110px 18px 18px; border-radius: 12px; border: 2px solid #e5e7eb; font-size: 16px; font-family: inherit; resize: none; outline: none; position: relative; z-index: 2; background: transparent; }
-    .input-box:focus { border-color: #A3E635; }
-    
-    .ghost { position: absolute; top: 0; left: 0; padding: 18px; font-size: 16px; color: #9ca3af; z-index: 1; pointer-events: none; }
-    .ghost span { color: transparent; }
+    /* ФОНОВЫЕ ЭЛЕМЕНТЫ */
+    .bg-elements { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+    .bg-wave { position: absolute; left: -10%; top: 20%; width: 50%; height: 60%; border: 2px solid rgba(157, 241, 35, 0.4); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(-15deg); }
 
-    .btn { position: absolute; right: 8px; top: 8px; height: 44px; padding: 0 20px; border-radius: 8px; border: none; background: #A3E635; color: #111; font-weight: 600; cursor: pointer; z-index: 3; }
-    .btn:disabled { background: #d1d5db; cursor: not-allowed; }
+    /* НАВИГАЦИЯ */
+    .navbar { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 12px 40px; background: rgba(255, 255, 255, 0.95); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .logo img { height: 32px; display: block; }
+    .nav-links { display: flex; gap: 32px; font-size: 15px; font-weight: 500; }
+    .nav-links a { color: var(--text-main); text-decoration: none; cursor: pointer; }
+    .btn-primary { background: var(--brand-green); border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
 
-    .explanation { background: #f9fafb; padding: 12px; border-radius: 8px; color: #4b5563; margin-bottom: 16px; border-left: 4px solid #A3E635; }
-    .sql-code { background: #1f2937; color: #e5e7eb; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; margin: 12px 0; overflow-x: auto; }
-    
-    .kpi-card { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 24px; border-radius: 12px; text-align: center; margin: 16px 0; }
-    .kpi-title { font-size: 14px; color: #166534; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .kpi-value { font-size: 40px; font-weight: bold; color: #15803d; margin-top: 8px; }
+    /* ГЛАВНЫЙ КОНТЕЙНЕР */
+    .app-container { position: relative; z-index: 10; width: calc(100% - 60px); max-width: 1400px; height: calc(100vh - 100px); margin: 15px auto; background: var(--panel-bg); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); display: flex; overflow: hidden; }
 
-    table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 16px; }
-    th { background: #f3f4f6; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+    /* ЛЕВАЯ ПАНЕЛЬ */
+    .left-panel { width: 40%; border-right: 1px solid var(--border-color); padding: 24px; display: flex; flex-direction: column; overflow-y: auto; background: #fafafa; }
+    .search-wrapper { position: relative; margin-bottom: 20px; }
+    .search-input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border-color); border-radius: 12px; font-size: 15px; outline: none; background: #fff; z-index: 2; position: relative; }
+    .ghost-text { position: absolute; top: 14px; left: 16px; font-size: 15px; color: #9ca3af; z-index: 1; pointer-events: none; white-space: nowrap; }
+    .ghost-text span { color: transparent; }
+    .chip { display: inline-block; padding: 6px 14px; border-radius: 18px; font-size: 13px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); color: var(--text-muted); margin: 0 6px 6px 0; transition: 0.2s; }
+    .chip:hover { border-color: var(--brand-green); color: #000; }
+    .sql-code { background: #1f2937; color: #e5e7eb; border-radius: 10px; padding: 16px; font-family: 'Fira Code', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; margin-top: auto; max-height: 250px; overflow-y: auto; }
+
+    /* ПРАВАЯ ПАНЕЛЬ */
+    .right-panel { width: 60%; padding: 24px; display: flex; flex-direction: column; background: #f3f4f6; overflow-y: auto; }
+    .result-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; flex-grow: 1; display: flex; flex-direction: column; min-height: 400px; }
+    .badge { background: var(--brand-green); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+
+    /* KPI КАРТОЧКА */
+    .kpi-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; text-align: center; }
+    .kpi-value { font-size: 72px; font-weight: 800; color: #4f46e5; margin: 10px 0; letter-spacing: -2px; }
+    .kpi-label { font-size: 16px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* СЕТКА ДЛЯ ГРАФИКА И ТАБЛИЦЫ */
+    .data-grid { display: flex; flex-direction: column; gap: 24px; flex-grow: 1; margin-top: 20px; }
+    .chart-container { height: 250px; width: 100%; }
     
-    .chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-    .chip { padding: 6px 12px; background: #f3f4f6; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1px solid #e5e7eb; }
-    .chip:hover { background: #e5e7eb; border-color: #d1d5db; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+    th { background: #f9fafb; padding: 10px; font-weight: 600; border-bottom: 2px solid #e5e7eb; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #f3f4f6; }
+
+    .status-banner { background: #fff; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-weight: 600; color: #374151; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .status-icon { width: 20px; height: 20px; background: var(--brand-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    
+    .loader { margin: auto; text-align: center; color: var(--text-muted); }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-green); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -52,114 +79,67 @@
 const { useState, useRef, useEffect } = React;
 const API = "http://localhost:8000";
 
-function ChartOrKPI({ chartType, columns, rows, comparison }) {
+const CheckIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" width="12" height="12"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>;
+
+function ChartView({ columns, rows }) {
   const canvasRef = useRef(null);
-
-  if (columns.length === 1 && rows.length === 1) {
-    return (
-      <div className="kpi-card">
-        <div className="kpi-title">{columns[0]}</div>
-        <div className="kpi-value">{rows[0][0]}</div>
-      </div>
-    );
-  }
-
-  const isTimeSeries = columns[0].toLowerCase().includes("date");
-
-  const resolvedType = chartType === "table"
-    ? "table"
-    : isTimeSeries ? "line" : "bar";
-
-  if (resolvedType === "table" || rows.length > 50) {
-    return (
-      <table>
-        <thead><tr>{columns.map(c => <th key={c}>{c}</th>)}</tr></thead>
-        <tbody>
-          {rows.slice(0, 20).map((r, i) => (
-            <tr key={i}>
-              {r.map((v, j) => <td key={j}>{v}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  }
-
   useEffect(() => {
-    if (!canvasRef.current) return;
-
+    if (!canvasRef.current || !rows || rows.length <= 1) return;
     const chart = new Chart(canvasRef.current, {
-      type: resolvedType,
+      type: 'bar',
       data: {
-        labels: rows.map(r => r[0]),
-        datasets: [
-          {
-            label: columns[1],
-            data: rows.map(r => Number(r[1]) || 0),
-            backgroundColor: '#A3E635'
-          },
-          comparison && columns.includes("delta") && {
-            label: "Δ",
-            data: rows.map(r => Number(r[columns.indexOf("delta")]) || 0),
-            backgroundColor: '#f59e0b'
-          }
-        ].filter(Boolean)
+        labels: rows.map(r => String(r[0])).slice(0, 15),
+        datasets:[{
+          label: columns[1] || 'Значение',
+          data: rows.map(r => Number(r[1]) || 0).slice(0, 15),
+          backgroundColor: '#4f46e5',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { 
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
+        }
       }
     });
-
     return () => chart.destroy();
-  }, [rows, columns, comparison]);
-
-  return <canvas ref={canvasRef} style={{marginTop: 20}} />;
+  }, [rows]);
+  return <div className="chart-container"><canvas ref={canvasRef} /></div>;
 }
-  
+
 function App() {
-  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [ghost, setGhost] = useState("");
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
   const fetchGhost = async (text) => {
-    if (text.length < 3) {
-      setGhost("");
-      return;
-    }
+    if (text.length < 3) { setGhost(""); return; }
     try {
       const res = await fetch(`${API}/suggest/ghost`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prefix: text })
       });
-
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let streamTxt = "";
-
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value);
-        // SSE формат присылает строки вида "data: {...}\n\n"
         const lines = chunk.split("\n");
-        
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const jsonStr = line.replace("data: ", "").trim();
             if (jsonStr === "[DONE]") break;
-            try {
-              const data = JSON.parse(jsonStr);
-              streamTxt += data.text;
-              setGhost(streamTxt);
-            } catch (e) {
-              // Игнорируем неполные JSON чанки
-            }
+            try { streamTxt += JSON.parse(jsonStr).text; setGhost(streamTxt); } catch (e) {}
           }
         }
       }
-    } catch (err) {
-      console.error("Ghost error:", err);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -169,62 +149,109 @@ function App() {
 
   const ask = async (q) => {
     if (!q) return;
-    setMessages(m =>[...m, {role: "user", content: q}]);
-    setInput(""); setGhost(""); setLoading(true);
+    setInput(q); setLoading(true); setResult(null);
     try {
       const r = await fetch(`${API}/query`, {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({question: q})
       });
       const data = await r.json();
-      setMessages(m => [...m, {role: "bot", data}]);
-    } catch (e) {
-      setMessages(m =>[...m, {role: "bot", data: {error: "error", message: e.message}}]);
-    }
+      setResult(data);
+    } catch (e) { setResult({ error: true, message: e.message }); }
     setLoading(false);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
+    if (e.key === 'Enter') { e.preventDefault(); ask(input); }
+  };
+
+  // ЛОГИКА ДЛЯ KPI: Если в данных всего одна строка
+  const isKPI = result && !result.error && result.data.rows && result.data.rows.length === 1;
+
   return (
-    <div className="app">
-      <div className="header">Driv<span>ee</span> Analytics</div>
-      
-      <div className="chat">
-        {messages.length === 0 && <div className="msg bot">Привет! Спроси меня о данных. Например: выручка по городам за последние 7 дней.</div>}
-        {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
-            {m.role === 'user' ? m.content : (
-              m.data.error ? <span style={{color:'red'}}>Ошибка: {m.data.message} <br/><br/> {m.data.sql}</span> :
-              <div>
-                <div className="explanation"><b>Понял так:</b> {m.data.explanation}</div>
-                <ChartOrKPI chartType={m.data.chart_type} columns={m.data.data.columns} rows={m.data.data.rows} comparison={m.data.comparison}/>
-                <details><summary style={{cursor:'pointer', marginTop:10, color:'#6b7280'}}>Показать SQL</summary>
-                  <div className="sql-code">{m.data.sql}</div>
-                </details>
-              </div>
-            )}
+    <>
+      <div className="bg-elements"><div className="bg-wave"></div></div>
+      <nav className="navbar">
+        <div className="logo">
+            <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" alt="Drivee" />
+        </div>
+        <div className="nav-links"><a>Аналитика</a><a>Отчеты</a><a>Справка</a></div>
+        <button className="btn-primary" onClick={() => {setInput(""); setResult(null);}}>Новый чат</button>
+      </nav>
+
+      <div className="app-container">
+        <div className="left-panel">
+          <h3 style={{marginTop: 0, fontSize: '18px'}}>Задать вопрос</h3>
+          <div className="search-wrapper">
+            <div className="ghost-text"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
+            <input type="text" className="search-input" value={input} 
+                   onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+                   placeholder="Например: Выручка за вчера" />
           </div>
-        ))}
-        {loading && <div className="msg bot">Анализирую миллион строк... ⏳</div>}
-      </div>
+          <div style={{marginBottom: '20px'}}>
+            <div className="chip" onClick={() => ask("Выручка за вчера")}>Выручка за вчера</div>
+            <div className="chip" onClick={() => ask("Сравни отмены по городам")}>Отмены по городам</div>
+            <div className="chip" onClick={() => ask("Сколько всего заказов")}>Всего заказов</div>
+          </div>
+          {result && <div className="sql-code">{result.sql}</div>}
+        </div>
 
-      <div className="input-wrap">
-        <div className="ghost"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
-        <textarea className="input-box" rows="1" value={input} 
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
-            if (e.key === 'Enter') { e.preventDefault(); ask(input); }
-          }} 
-          placeholder="Сколько отмен было вчера?" />
-        <button className="btn" disabled={loading} onClick={() => ask(input)}>Отправить</button>
-      </div>
+        <div className="right-panel">
+          {loading ? (
+             <div className="loader"><div className="spinner"></div>Считаем...</div>
+          ) : result && !result.error ? (
+            <>
+              <div style={{marginBottom: 16, color: '#4b5563', fontSize: '14px'}}>Понял запрос как: <b>{result.explanation}</b></div>
+              <div className="result-card">
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                  <span style={{fontWeight:700, fontSize:18, color: '#111827'}}>Результат анализа</span>
+                  <span className="badge">SQL Success</span>
+                </div>
 
-      <div className="chips">
-        <div className="chip" onClick={()=>ask("Покажи уникальные заказы за все время")}>Уникальные заказы</div>
-        <div className="chip" onClick={()=>ask("Выручка по городам (city_id)")}>Выручка по городам</div>
-        <div className="chip" onClick={()=>ask("Доля отмен по городам")}>Доля отмен по городам</div>
+                {isKPI ? (
+                  /* ОТОБРАЖЕНИЕ KPI КАРТОЧКИ */
+                  <div className="kpi-container">
+                    <div className="kpi-label">{result.data.columns[result.data.columns.length - 1]}</div>
+                    <div className="kpi-value">
+                      {/* Берем последнее значение в строке (обычно это числовая метрика) */}
+                      {(() => {
+                          const val = result.data.rows[0][result.data.rows[0].length - 1];
+                          return typeof val === 'number' ? val.toLocaleString('ru-RU') : val;
+                      })()}
+                    </div>
+                  </div>
+                ) : (
+                  /* ОТОБРАЖЕНИЕ ГРАФИКА И ТАБЛИЦЫ */
+                  <div className="data-grid">
+                    <ChartView columns={result.data.columns} rows={result.data.rows} />
+                    <div style={{overflowY: 'auto', flexGrow: 1}}>
+                      <table>
+                        <thead><tr>{result.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+                        <tbody>
+                          {result.data.rows.slice(0, 15).map((row, i) => (
+                            <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="status-banner">
+                <div className="status-icon"><CheckIcon/></div>
+                Данные успешно загружены из базы Drivee
+              </div>
+            </>
+          ) : (
+            <div style={{margin:'auto', color:'#9ca3af', textAlign:'center'}}>
+                <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{opacity: 0.2, height: 40, marginBottom: 20}} />
+                <br/>Введите ваш вопрос в левой панели
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
