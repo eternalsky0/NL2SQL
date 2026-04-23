@@ -258,7 +258,7 @@ function App() {
               {result && !result.error && <div className="sql-code">{result.sql}</div>}
             </div>
 
-            <<div className="right-panel">
+            <div className="right-panel">
               {loading ? (
                  <div className="loader"><div className="spinner"></div></div>
               ) : result && result.error ? (
@@ -282,7 +282,7 @@ function App() {
                     <div style={{color: '#4b5563', fontSize: '14px'}}>Понял как: <b>{result.explanation}</b></div>
                     <button className="btn-save" onClick={handleSave}>Сохранить в отчеты</button>
                   </div>
-                 
+
                   <div className="result-card">
                     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                       <span style={{fontWeight:700, fontSize:18}}>Результат</span>
