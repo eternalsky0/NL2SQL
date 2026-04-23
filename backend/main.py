@@ -257,6 +257,12 @@ def _init_app_tables():
             username TEXT, content TEXT, query_text TEXT, created_at TEXT
         );
     """)
+    # migration: add category column if missing
+    try:
+        cur.execute("ALTER TABLE community_posts ADD COLUMN category TEXT DEFAULT 'Аналитика'")
+        con.commit()
+    except Exception:
+        pass
     for row in [
         ("a.kobenko",  "admin123", "admin"),
         ("d.sezyomov", "admin456", "admin"),
@@ -307,6 +313,7 @@ class PostReq(BaseModel):
     username: str
     content: str
     query_text: str
+    category: str = "Аналитика"
 
 class GhostReq(BaseModel):
     prefix: str
@@ -560,17 +567,17 @@ async def generate_insight(req: InsightReq):
 async def get_community():
     con = _get_conn()
     rows = con.execute(
-        "SELECT id, username, content, query_text, created_at FROM community_posts ORDER BY created_at DESC"
+        "SELECT id, username, content, query_text, created_at, COALESCE(category, 'Аналитика') FROM community_posts ORDER BY created_at DESC"
     ).fetchall()
     con.close()
-    return [{"id": r[0], "username": r[1], "content": r[2], "query_text": r[3], "created_at": r[4]} for r in rows]
+    return [{"id": r[0], "username": r[1], "content": r[2], "query_text": r[3], "created_at": r[4], "category": r[5]} for r in rows]
 
 @app.post("/community")
 async def create_post(req: PostReq):
     con = _get_conn()
     con.execute(
-        "INSERT INTO community_posts (username, content, query_text, created_at) VALUES (?, ?, ?, ?)",
-        (req.username, req.content, req.query_text, datetime.now().isoformat())
+        "INSERT INTO community_posts (username, content, query_text, created_at, category) VALUES (?, ?, ?, ?, ?)",
+        (req.username, req.content, req.query_text, datetime.now().isoformat(), req.category)
     )
     con.commit()
     con.close()

@@ -176,16 +176,42 @@
 
     .input-hint { font-size: 11px; color: #ccc; margin-top: 8px; text-align: center; }
 
-    /* COMMUNITY / ARCHIVE / AUTOMATION views */
-    .side-view { flex-grow: 1; overflow-y: auto; background: var(--bg-main); padding: 40px; }
-    .post-composer { background: #fff; padding: 24px; border-radius: 24px; margin-bottom: 40px; border: 1px solid var(--border-color); max-width: 800px; margin-left: auto; margin-right: auto; }
-    .post-input { width: 100%; border: none; outline: none; font-size: 16px; resize: none; margin-bottom: 16px; font-family: 'Noto Sans', sans-serif; }
-    .post-query-input { width: 100%; background: #f9f9f9; padding: 12px 16px; border-radius: 12px; border: 1px solid #eee; font-size: 13px; font-family: monospace; outline: none; margin-bottom: 16px; }
-    .post-card { background: #fff; padding: 32px; border-radius: 24px; border: 1px solid var(--border-color); margin-bottom: 24px; max-width: 800px; margin-left: auto; margin-right: auto; }
-    .post-user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .post-avatar { width: 36px; height: 36px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
-    .post-content { font-size: 15px; line-height: 1.6; margin-bottom: 20px; color: #333; }
-    .post-query-preview { background: #f5f5f7; padding: 16px; border-radius: 12px; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 16px; font-family: monospace; }
+    /* COMMUNITY — prompt library */
+    .community-view { flex-grow: 1; overflow-y: auto; background: var(--bg-main); display: flex; flex-direction: column; }
+    .community-header { background: #fff; border-bottom: 1px solid var(--border-color); padding: 28px 40px 20px; flex-shrink: 0; }
+    .community-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .community-title { font-size: 22px; font-weight: 800; }
+    .community-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .community-search-row { display: flex; align-items: center; gap: 12px; }
+    .community-search { flex-grow: 1; padding: 10px 16px 10px 40px; border: 1.5px solid var(--border-color); border-radius: 100px; font-size: 14px; font-family: 'Noto Sans', sans-serif; outline: none; background: #fafafa url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23bbb' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 14px center; transition: border-color 0.15s; }
+    .community-search:focus { border-color: var(--brand-green); background-color: #fff; }
+    .cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .cat-tab { padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border-color); background: #fff; color: #666; transition: 0.15s; }
+    .cat-tab:hover { border-color: #bbb; color: #333; }
+    .cat-tab.active { background: #1e1e1e; color: #fff; border-color: #1e1e1e; }
+
+    .prompt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 28px 40px; align-items: start; }
+    .prompt-card { background: #fff; border: 1px solid var(--border-color); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 0; transition: 0.2s; cursor: default; }
+    .prompt-card:hover { border-color: #ccc; box-shadow: 0 6px 24px rgba(0,0,0,0.06); transform: translateY(-1px); }
+    .prompt-card-cat { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+    .prompt-card-title { font-size: 15px; font-weight: 700; line-height: 1.4; color: #1e1e1e; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .prompt-card-author { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .prompt-author-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .prompt-author-name { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+    .prompt-card-desc { font-size: 13px; color: #666; line-height: 1.55; flex-grow: 1; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 18px; }
+    .prompt-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 16px; border-top: 1px solid #f5f5f7; }
+    .prompt-card-date { font-size: 11px; color: #ccc; }
+    .btn-use-prompt { background: none; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; color: #444; transition: 0.15s; }
+    .btn-use-prompt:hover { border-color: var(--brand-green); color: #1e1e1e; background: #f9fef0; }
+
+    /* Compose modal */
+    .compose-fab { position: fixed; bottom: 36px; right: 36px; background: #1e1e1e; color: #fff; border: none; border-radius: 100px; padding: 14px 22px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); transition: 0.2s; font-family: 'Noto Sans', sans-serif; z-index: 50; }
+    .compose-fab:hover { background: #333; transform: translateY(-1px); }
+    .cat-pill-select { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cat-pill { padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border-color); background: #fff; color: #666; transition: 0.15s; }
+    .cat-pill.selected { color: #fff; border-color: transparent; }
+
+    /* ARCHIVE / AUTOMATION views */
     .archive-grid { padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; background: var(--bg-main); height: 100%; overflow-y: auto; align-items: start; }
     .archive-card { background: #fff; padding: 24px; border-radius: 20px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; }
     .archive-card:hover { border-color: var(--brand-green); transform: translateY(-2px); }
@@ -715,6 +741,195 @@ function BotMessage({ msg }) {
   );
 }
 
+// ── Community ─────────────────────────────────────────────────────
+const CATEGORIES = [
+  { id: 'all',        label: 'Все',              color: '#888',    bg: '#f0f0f2' },
+  { id: 'Аналитика',  label: 'Аналитика',        color: '#3b82f6', bg: '#eff6ff' },
+  { id: 'Выручка',    label: 'Выручка',           color: '#16a34a', bg: '#f0fdf4' },
+  { id: 'Водители',   label: 'Водители',          color: '#f59e0b', bg: '#fffbeb' },
+  { id: 'Города',     label: 'Города',            color: '#8b5cf6', bg: '#f5f3ff' },
+  { id: 'Отмены',     label: 'Отмены',            color: '#ef4444', bg: '#fef2f2' },
+  { id: 'Тренды',     label: 'Тренды',            color: '#0891b2', bg: '#ecfeff' },
+];
+
+function getCatStyle(catId) {
+  return CATEGORIES.find(c => c.id === catId) || CATEGORIES[1];
+}
+
+function ComposeModal({ username, onClose, onPublished }) {
+  const [category, setCategory] = useState('Аналитика');
+  const [query, setQuery]       = useState('');
+  const [desc, setDesc]         = useState('');
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState(null);
+
+  const submit = async () => {
+    if (!query.trim()) return;
+    setSaving(true); setError(null);
+    try {
+      const res = await fetch(`${API}/community`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, content: desc.trim() || query.trim(), query_text: query.trim(), category })
+      });
+      if (!res.ok) throw new Error('Ошибка сервера');
+      onPublished();
+      onClose();
+    } catch (e) { setError(e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-box" style={{ width: 540 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:28 }}>
+          <div className="modal-title">Поделиться промптом</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb', fontSize:22, lineHeight:1, padding:4 }}>✕</button>
+        </div>
+
+        <label className="modal-label" style={{ marginBottom:10 }}>Категория</label>
+        <div className="cat-pill-select" style={{ marginBottom:24 }}>
+          {CATEGORIES.filter(c => c.id !== 'all').map(c => (
+            <button
+              key={c.id}
+              className={`cat-pill ${category === c.id ? 'selected' : ''}`}
+              style={category === c.id ? { background: c.color, borderColor: c.color } : {}}
+              onClick={() => setCategory(c.id)}
+            >{c.label}</button>
+          ))}
+        </div>
+
+        <label className="modal-label">Запрос</label>
+        <textarea
+          className="modal-input"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Например: Топ-10 водителей по выручке за последний месяц"
+          rows={3}
+          style={{ marginBottom:20, resize:'vertical', borderRadius:14, padding:'12px 16px' }}
+          autoFocus
+        />
+
+        <label className="modal-label">
+          Описание{' '}
+          <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0 }}>(необязательно)</span>
+        </label>
+        <textarea
+          className="modal-input"
+          value={desc}
+          onChange={e => setDesc(e.target.value)}
+          placeholder="Что показывает этот запрос, какой инсайт вы нашли…"
+          rows={2}
+          style={{ marginBottom:28, resize:'vertical', borderRadius:14, padding:'12px 16px' }}
+        />
+
+        {error && <div className="modal-error">{error}</div>}
+        <button
+          className="btn-new-chat"
+          style={{ width:'100%', marginBottom:0, opacity:(!query.trim()||saving)?0.5:1, cursor:(!query.trim()||saving)?'not-allowed':'pointer' }}
+          disabled={!query.trim() || saving}
+          onClick={submit}
+        >{saving ? 'Публикую…' : 'Опубликовать'}</button>
+      </div>
+    </div>
+  );
+}
+
+function CommunityView({ username, onAsk }) {
+  const [posts, setPosts]         = useState([]);
+  const [search, setSearch]       = useState('');
+  const [activeCat, setActiveCat] = useState('all');
+  const [compose, setCompose]     = useState(false);
+
+  const load = async () => {
+    try {
+      const r = await fetch(`${API}/community`);
+      setPosts(await r.json());
+    } catch {}
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = posts.filter(p => {
+    const matchCat = activeCat === 'all' || p.category === activeCat;
+    const q = search.toLowerCase();
+    const matchSearch = !q || p.query_text.toLowerCase().includes(q) || (p.content||'').toLowerCase().includes(q);
+    return matchCat && matchSearch;
+  });
+
+  return (
+    <div className="community-view">
+      {/* Header */}
+      <div className="community-header">
+        <div className="community-header-top">
+          <div>
+            <div className="community-title">Библиотека промптов</div>
+            <div className="community-subtitle">Готовые запросы от команды — используй или вдохновляйся</div>
+          </div>
+          <button className="btn-new-chat" style={{ marginBottom:0, width:'auto', padding:'10px 20px', fontSize:13 }} onClick={() => setCompose(true)}>
+            + Поделиться
+          </button>
+        </div>
+        <input
+          className="community-search"
+          placeholder="Поиск промптов…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <div className="cat-tabs">
+          {CATEGORIES.map(c => (
+            <button key={c.id} className={`cat-tab ${activeCat === c.id ? 'active' : ''}`} onClick={() => setActiveCat(c.id)}>
+              {c.label}
+              {c.id === 'all' && <span style={{ marginLeft:6, fontSize:11, opacity:0.5 }}>{posts.length}</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Grid */}
+      {filtered.length > 0 ? (
+        <div className="prompt-grid">
+          {filtered.map(post => {
+            const cat = getCatStyle(post.category);
+            const initials = post.username[0].toUpperCase();
+            const date = new Date(post.created_at).toLocaleDateString('ru-RU', { day:'numeric', month:'short' });
+            return (
+              <div key={post.id} className="prompt-card">
+                <div className="prompt-card-cat" style={{ color: cat.color }}>{post.category || 'Аналитика'}</div>
+                <div className="prompt-card-title">{post.query_text}</div>
+                <div className="prompt-card-author">
+                  <div className="prompt-author-dot" style={{ background: cat.color }} />
+                  <div className="prompt-author-name">{post.username}</div>
+                </div>
+                {post.content && post.content !== post.query_text && (
+                  <div className="prompt-card-desc">{post.content}</div>
+                )}
+                <div className="prompt-card-footer">
+                  <span className="prompt-card-date">{date}</span>
+                  <button className="btn-use-prompt" onClick={() => onAsk(post.query_text)}>Использовать →</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:'#ccc', flexDirection:'column', gap:12 }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <div style={{ fontSize:14 }}>{search || activeCat !== 'all' ? 'Ничего не найдено' : 'Промптов пока нет'}</div>
+        </div>
+      )}
+
+      {compose && (
+        <ComposeModal
+          username={username}
+          onClose={() => setCompose(false)}
+          onPublished={load}
+        />
+      )}
+    </div>
+  );
+}
+
 // ── Chips ─────────────────────────────────────────────────────────
 function ChipsBlock({ onAsk, input, history }) {
   const [chips, setChips] = useState([]);
@@ -781,7 +996,6 @@ function App() {
   const [input, setInput] = useState("");
   const [ghost, setGhost] = useState("");
   const [loading, setLoading] = useState(false);
-  const [posts, setPosts] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useRef(null);
   const ghostTimerRef = useRef(null);
@@ -792,24 +1006,13 @@ function App() {
   }, [messages, loading]);
 
   useEffect(() => {
-    if (user) { loadChats(); loadCommunity(); pollUnread(); }
+    if (user) { loadChats(); pollUnread(); }
   }, [user]);
-
-  useEffect(() => {
-    if (view === 'community') loadCommunity();
-  }, [view]);
 
   const loadChats = async () => {
     try {
       const res = await fetch(`${API}/chats/${user.username}`);
       setChats(await res.json());
-    } catch {}
-  };
-
-  const loadCommunity = async () => {
-    try {
-      const res = await fetch(`${API}/community`);
-      setPosts(await res.json());
     } catch {}
   };
 
@@ -943,19 +1146,6 @@ function App() {
     } catch { alert("Сервер недоступен"); }
   };
 
-  const shareInsight = async (e) => {
-    e.preventDefault();
-    const content = e.target.content.value;
-    const query = e.target.query.value;
-    if (!content || !query) return;
-    await fetch(`${API}/community`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: user.username, content, query_text: query })
-    });
-    e.target.reset();
-    loadCommunity();
-  };
 
   if (!user) return (
     <div className="login-screen">
@@ -1092,38 +1282,7 @@ function App() {
 
         {/* ── COMMUNITY VIEW ── */}
         {view === "community" && (
-          <div className="side-view">
-            <form className="post-composer" onSubmit={shareInsight}>
-              <textarea name="content" className="post-input" placeholder="Поделитесь инсайтом или находкой…" rows="2" required />
-              <input name="query" className="post-query-input" placeholder="Приложите запрос (например: Выручка по городам за вчера)" required />
-              <div style={{display:'flex', justifyContent:'flex-end'}}>
-                <button type="submit" className="btn-new-chat" style={{marginBottom:0, padding:'8px 24px', width:'auto'}}>Поделиться</button>
-              </div>
-            </form>
-            {posts.map(post => (
-              <div key={post.id} className="post-card">
-                <div className="post-user-info">
-                  <div className="post-avatar">{post.username[0].toUpperCase()}</div>
-                  <div>
-                    <div style={{fontWeight:800, fontSize:14}}>{post.username}</div>
-                    <div style={{fontSize:11, color:'#aaa'}}>{new Date(post.created_at).toLocaleString("ru-RU")}</div>
-                  </div>
-                </div>
-                <div className="post-content">{post.content}</div>
-                <div className="post-query-preview">{post.query_text}</div>
-                <button
-                  className="btn-new-chat"
-                  style={{marginBottom:0, fontSize:12, padding:'8px 20px', width:'auto', background:'#f0f0f2', color:'#000'}}
-                  onClick={() => ask(post.query_text)}
-                >
-                  Использовать
-                </button>
-              </div>
-            ))}
-            {posts.length === 0 && (
-              <div style={{textAlign:'center', padding:'60px 20px', color:'#ccc', maxWidth:800, margin:'0 auto'}}>Публикаций пока нет</div>
-            )}
-          </div>
+          <CommunityView username={user.username} onAsk={(q) => { ask(q); setView('chat'); }} />
         )}
 
         {/* ── AUTOMATION VIEW ── */}
