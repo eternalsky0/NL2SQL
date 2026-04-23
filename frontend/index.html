@@ -94,7 +94,23 @@
     .msg-bot { align-self: flex-start; width: 100%; display: flex; flex-direction: column; gap: 16px; }
     .bot-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
     .bot-text { font-size: 15px; color: #444; line-height: 1.6; flex-grow: 1; }
-    .btn-save-report { background: #1e1e1e; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 500; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+    .btn-save-report { background: #1e1e1e; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 500; font-size: 12px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; gap: 6px; transition: 0.15s; }
+    .btn-save-report:hover { background: #333; }
+
+    /* REPORT MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.28); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+    .modal-box { background: #fff; border-radius: 28px; padding: 40px; width: 500px; max-width: 92vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,0.14); }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .modal-label { font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 8px; }
+    .modal-input { display: block; width: 100%; padding: 12px 16px; border: 1.5px solid var(--border-color); border-radius: 12px; font-size: 15px; font-family: 'Noto Sans', sans-serif; outline: none; box-sizing: border-box; transition: border-color 0.15s; }
+    .modal-input:focus { border-color: var(--brand-green); }
+    .modal-input.mono { font-family: monospace; font-size: 13px; }
+    .schedule-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.15s; font-size: 14px; }
+    .schedule-option.selected { border-color: var(--brand-green); background: #f9fef0; }
+    .schedule-option input[type=radio] { accent-color: var(--brand-green); }
+    .modal-success { text-align: center; padding: 16px 0; }
+    .modal-success-icon { font-size: 48px; margin-bottom: 16px; }
+    .modal-error { color: #dc2626; font-size: 13px; margin-bottom: 16px; padding: 10px 14px; background: #fff5f5; border-radius: 10px; }
 
     .result-card { background: #fff; border: 1px solid var(--border-color); border-radius: 24px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.03); margin-top: 8px; }
     .kpi-value { font-size: 64px; font-weight: 800; color: var(--text-main); letter-spacing: -3px; line-height: 1; margin: 15px 0; }
@@ -472,9 +488,143 @@ function SqlBlock({ sql }) {
   );
 }
 
+// ── Report modal ──────────────────────────────────────────────────
+const SCHEDULES = [
+  { value: 'none',       label: 'Без расписания',          cron: '' },
+  { value: 'daily',      label: 'Ежедневно в 9:00',        cron: '0 9 * * *' },
+  { value: 'weekly_mon', label: 'По понедельникам в 9:00', cron: '0 9 * * 1' },
+  { value: 'weekly_fri', label: 'По пятницам в 9:00',      cron: '0 9 * * 5' },
+  { value: 'monthly',    label: '1-го числа в 9:00',       cron: '0 9 1 * *' },
+  { value: 'custom',     label: 'Свой cron…',              cron: null },
+];
+
+function ReportModal({ question, sql, chartType, onClose }) {
+  const [name, setName] = useState('');
+  const [schedule, setSchedule] = useState('none');
+  const [customCron, setCustomCron] = useState('');
+  const [recipients, setRecipients] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getCron = () => schedule === 'custom'
+    ? customCron.trim()
+    : (SCHEDULES.find(s => s.value === schedule)?.cron ?? '');
+
+  const save = async () => {
+    if (!name.trim()) return;
+    setSaving(true); setError(null);
+    try {
+      const res = await fetch(`${API}/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          question,
+          sql: sql || '',
+          chart_type: chartType || 'table',
+          schedule_cron: getCron(),
+          timezone: 'Europe/Moscow',
+          recipients: recipients.split(',').map(e => e.trim()).filter(Boolean),
+          enabled: !!getCron(),
+        })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Ошибка сервера');
+      setSaved(true);
+    } catch (e) { setError(e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-box">
+        {saved ? (
+          <div className="modal-success">
+            <div className="modal-success-icon">✓</div>
+            <div style={{fontWeight:700, fontSize:18, marginBottom:8}}>Отчёт сохранён!</div>
+            <div style={{color:'#888', fontSize:14, marginBottom:28}}>
+              Управляйте расписанием на странице{' '}
+              <a href="reports.html" style={{color:'var(--brand-green)', fontWeight:600}}>Отчёты →</a>
+            </div>
+            <button className="btn-new-chat" style={{width:'100%', marginBottom:0}} onClick={onClose}>Готово</button>
+          </div>
+        ) : (
+          <>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:28}}>
+              <div className="modal-title">Сохранить как отчёт</div>
+              <button onClick={onClose} style={{background:'none', border:'none', cursor:'pointer', color:'#bbb', fontSize:22, lineHeight:1, padding:4}}>✕</button>
+            </div>
+
+            {/* Название */}
+            <label className="modal-label">Название</label>
+            <input
+              className="modal-input"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Например: Выручка по городам"
+              style={{marginBottom:24}}
+              autoFocus
+            />
+
+            {/* Расписание */}
+            <label className="modal-label" style={{marginBottom:10}}>Расписание</label>
+            <div style={{display:'flex', flexDirection:'column', gap:8, marginBottom: schedule === 'custom' ? 12 : 24}}>
+              {SCHEDULES.map(s => (
+                <label
+                  key={s.value}
+                  className={`schedule-option ${schedule === s.value ? 'selected' : ''}`}
+                  onClick={() => setSchedule(s.value)}
+                >
+                  <input type="radio" name="sched" value={s.value} checked={schedule === s.value} onChange={() => setSchedule(s.value)} />
+                  {s.label}
+                  {s.cron && <span style={{marginLeft:'auto', fontFamily:'monospace', fontSize:11, color:'#bbb'}}>{s.cron}</span>}
+                </label>
+              ))}
+            </div>
+            {schedule === 'custom' && (
+              <input
+                className="modal-input mono"
+                value={customCron}
+                onChange={e => setCustomCron(e.target.value)}
+                placeholder="0 9 * * 1"
+                style={{marginBottom:24}}
+              />
+            )}
+
+            {/* Получатели */}
+            <label className="modal-label">
+              Email-получатели{' '}
+              <span style={{fontWeight:400, textTransform:'none', letterSpacing:0}}>(необязательно)</span>
+            </label>
+            <input
+              className="modal-input"
+              value={recipients}
+              onChange={e => setRecipients(e.target.value)}
+              placeholder="user@example.com, another@example.com"
+              style={{marginBottom:28}}
+            />
+
+            {error && <div className="modal-error">{error}</div>}
+
+            <button
+              className="btn-new-chat"
+              style={{width:'100%', marginBottom:0, opacity: (!name.trim() || saving) ? 0.5 : 1, cursor: (!name.trim() || saving) ? 'not-allowed' : 'pointer'}}
+              disabled={!name.trim() || saving}
+              onClick={save}
+            >
+              {saving ? 'Сохраняю…' : 'Сохранить отчёт'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Bot message ───────────────────────────────────────────────────
 function BotMessage({ msg }) {
   const cardRef = useRef(null);
+  const [showModal, setShowModal] = useState(false);
 
   if (msg.error) {
     return (
@@ -497,6 +647,14 @@ function BotMessage({ msg }) {
       <div className="bot-header">
         <div className="bot-text">{msg.content}</div>
       </div>
+      {showModal && (
+        <ReportModal
+          question={msg.content}
+          sql={d?.sql}
+          chartType={d?.chart_type}
+          onClose={() => setShowModal(false)}
+        />
+      )}
       {d && (
         <>
           <div className="meta-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
@@ -507,14 +665,20 @@ function BotMessage({ msg }) {
               {d.timings?.total_ms && <span className="meta-pill">{d.timings.total_ms} мс</span>}
             </div>
             {hasData && (
-              <ExportMenu
-                cardRef={cardRef}
-                columns={d.data.columns}
-                rows={d.data.rows}
-                chartType={d.chart_type}
-                explanation={msg.content}
-                sql={d.sql}
-              />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button className="btn-save-report" onClick={() => setShowModal(true)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Сохранить отчёт
+                </button>
+                <ExportMenu
+                  cardRef={cardRef}
+                  columns={d.data.columns}
+                  rows={d.data.rows}
+                  chartType={d.chart_type}
+                  explanation={msg.content}
+                  sql={d.sql}
+                />
+              </div>
             )}
           </div>
           <div className="result-card" ref={cardRef}>
