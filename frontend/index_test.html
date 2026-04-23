@@ -52,7 +52,7 @@
 
     /* ПРАВАЯ ПАНЕЛЬ - 60% */
     .right-panel { width: 60%; padding: 24px; display: flex; flex-direction: column; background: #f3f4f6; overflow-y: auto; }
-    .result-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; display: flex; flex-direction: column; height: fit-content; min-height: 300px; }
+    .result-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; display: flex; flex-direction: column; flex: 0 0 auto; height: auto; min-height: 400px; }
     .badge { background: var(--brand-green); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 
     .kpi-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; text-align: center; }
@@ -60,7 +60,7 @@
     .kpi-label { font-size: 16px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
 
     .data-grid { display: flex; flex-direction: column; gap: 24px; margin-top: 20px; }
-    .chart-container { height: 250px; width: 100%; }
+    .chart-container { height: 250px; width: 100%; flex-shrink: 0; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
     th { background: #f9fafb; padding: 10px; font-weight: 600; border-bottom: 2px solid #e5e7eb; text-align: left; }
     td { padding: 10px; border-bottom: 1px solid #f3f4f6; }
