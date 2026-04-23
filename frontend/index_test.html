@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Drivee · Аналитика без SQL</title>
+  <title>Drivee Analytics</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
@@ -22,51 +22,55 @@
     * { box-sizing: border-box; }
     body, html { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-gradient); color: var(--text-main); height: 100vh; overflow: hidden; }
 
-    /* ФОНОВЫЕ ЭЛЕМЕНТЫ */
     .bg-elements { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
     .bg-wave { position: absolute; left: -10%; top: 20%; width: 50%; height: 60%; border: 2px solid rgba(157, 241, 35, 0.4); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(-15deg); }
 
-    /* НАВИГАЦИЯ */
     .navbar { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 12px 40px; background: rgba(255, 255, 255, 0.95); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .logo img { height: 32px; display: block; }
+    .logo img { height: 32px; display: block; cursor: pointer; }
     .nav-links { display: flex; gap: 32px; font-size: 15px; font-weight: 500; }
-    .nav-links a { color: var(--text-main); text-decoration: none; cursor: pointer; }
+    .nav-links a { color: var(--text-main); text-decoration: none; cursor: pointer; transition: 0.2s; padding-bottom: 4px; border-bottom: 2px solid transparent; }
+    .nav-links a.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+    
     .btn-primary { background: var(--brand-green); border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
+    .btn-save { background: #4f46e5; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; }
 
-    /* ГЛАВНЫЙ КОНТЕЙНЕР */
     .app-container { position: relative; z-index: 10; width: calc(100% - 60px); max-width: 1400px; height: calc(100vh - 100px); margin: 15px auto; background: var(--panel-bg); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); display: flex; overflow: hidden; }
 
-    /* ЛЕВАЯ ПАНЕЛЬ */
+    /* ЛЕВАЯ ПАНЕЛЬ - Возвращена ширина 40% */
     .left-panel { width: 40%; border-right: 1px solid var(--border-color); padding: 24px; display: flex; flex-direction: column; overflow-y: auto; background: #fafafa; }
     .search-wrapper { position: relative; margin-bottom: 20px; }
     .search-input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border-color); border-radius: 12px; font-size: 15px; outline: none; background: #fff; z-index: 2; position: relative; }
     .ghost-text { position: absolute; top: 14px; left: 16px; font-size: 15px; color: #9ca3af; z-index: 1; pointer-events: none; white-space: nowrap; }
     .ghost-text span { color: transparent; }
-    .chip { display: inline-block; padding: 6px 14px; border-radius: 18px; font-size: 13px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); color: var(--text-muted); margin: 0 6px 6px 0; transition: 0.2s; }
+    
+    /* Чипы в одну строку */
+    .chips-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .chip { padding: 6px 12px; border-radius: 18px; font-size: 12px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); color: var(--text-muted); transition: 0.2s; white-space: nowrap; }
     .chip:hover { border-color: var(--brand-green); color: #000; }
-    .sql-code { background: #1f2937; color: #e5e7eb; border-radius: 10px; padding: 16px; font-family: 'Fira Code', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; margin-top: auto; max-height: 250px; overflow-y: auto; }
+    
+    .sql-code { background: #1f2937; color: #e5e7eb; border-radius: 10px; padding: 16px; font-family: 'Fira Code', monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap; margin-top: auto; max-height: 200px; overflow-y: auto; }
 
-    /* ПРАВАЯ ПАНЕЛЬ */
+    /* ПРАВАЯ ПАНЕЛЬ - 60% */
     .right-panel { width: 60%; padding: 24px; display: flex; flex-direction: column; background: #f3f4f6; overflow-y: auto; }
     .result-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; flex-grow: 1; display: flex; flex-direction: column; min-height: 400px; }
     .badge { background: var(--brand-green); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 
-    /* KPI КАРТОЧКА */
     .kpi-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; text-align: center; }
     .kpi-value { font-size: 72px; font-weight: 800; color: #4f46e5; margin: 10px 0; letter-spacing: -2px; }
     .kpi-label { font-size: 16px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
 
-    /* СЕТКА ДЛЯ ГРАФИКА И ТАБЛИЦЫ */
     .data-grid { display: flex; flex-direction: column; gap: 24px; flex-grow: 1; margin-top: 20px; }
     .chart-container { height: 250px; width: 100%; }
-    
     table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
     th { background: #f9fafb; padding: 10px; font-weight: 600; border-bottom: 2px solid #e5e7eb; text-align: left; }
     td { padding: 10px; border-bottom: 1px solid #f3f4f6; }
 
-    .status-banner { background: #fff; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-weight: 600; color: #374151; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .status-icon { width: 20px; height: 20px; background: var(--brand-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-    
+    .reports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px; }
+    .report-item { background: white; border-radius: 15px; padding: 20px; border: 1px solid #e5e7eb; cursor: pointer; transition: 0.2s; position: relative; }
+    .report-item:hover { transform: translateY(-3px); border-color: var(--brand-green); }
+    .report-date { font-size: 11px; color: #9ca3af; margin-top: 15px; display: block; }
+    .btn-delete { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #ef4444; cursor: pointer; opacity: 0.6; }
+
     .loader { margin: auto; text-align: center; color: var(--text-muted); }
     .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-green); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -79,7 +83,7 @@
 const { useState, useRef, useEffect } = React;
 const API = "http://localhost:8000";
 
-const CheckIcon = () => <svg fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" width="12" height="12"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>;
+const TrashIcon = () => <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
 
 function ChartView({ columns, rows }) {
   const canvasRef = useRef(null);
@@ -111,10 +115,77 @@ function ChartView({ columns, rows }) {
 }
 
 function App() {
+  const [view, setView] = useState("analytics");
   const [input, setInput] = useState("");
   const [ghost, setGhost] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [reports, setReports] = useState([]);
+
+  const loadReports = async () => {
+    try {
+      const r = await fetch(`${API}/reports`);
+      const data = await r.json();
+      setReports(data);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { if (view === "reports") loadReports(); }, [view]);
+
+  // Функция для открытия отчета БЕЗ повторного запроса к LLM
+  const openReport = async (rep) => {
+    setLoading(true);
+    setView("analytics");
+    setInput(rep.question);
+    try {
+      const r = await fetch(`${API}/execute_report`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          sql: rep.sql_query,
+          explanation: rep.explanation,
+          question: rep.question
+        })
+      });
+      const data = await r.json();
+      setResult(data);
+    } catch (e) { alert("Ошибка при загрузке данных отчета"); }
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    if (!result) return;
+    const name = prompt("Название отчета:", `Отчет: ${result.question}`);
+    if (!name) return;
+    await fetch(`${API}/reports`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, question: result.question, sql: result.sql, explanation: result.explanation })
+    });
+    alert("Сохранено!");
+  };
+
+  const deleteReport = async (e, id) => {
+    e.stopPropagation();
+    if (confirm("Удалить?")) {
+      await fetch(`${API}/reports/${id}`, { method: "DELETE" });
+      loadReports();
+    }
+  };
+
+  const ask = async (q) => {
+    if (!q) return;
+    setInput(q); setLoading(true); setResult(null); setView("analytics");
+    try {
+      const r = await fetch(`${API}/query`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({question: q})
+      });
+      const data = await r.json();
+      setResult(data);
+    } catch (e) { setResult({ error: true, message: e.message }); }
+    setLoading(false);
+  };
 
   const fetchGhost = async (text) => {
     if (text.length < 3) { setGhost(""); return; }
@@ -147,59 +218,49 @@ function App() {
     return () => clearTimeout(t);
   }, [input]);
 
-  const ask = async (q) => {
-    if (!q) return;
-    setInput(q); setLoading(true); setResult(null);
-    try {
-      const r = await fetch(`${API}/query`, {
-        method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({question: q})
-      });
-      const data = await r.json();
-      setResult(data);
-    } catch (e) { setResult({ error: true, message: e.message }); }
-    setLoading(false);
-  };
-
   const handleKeyDown = (e) => {
     if (e.key === 'Tab' && ghost) { e.preventDefault(); setInput(input + (input.endsWith(' ') ? '' : ' ') + ghost); setGhost(""); }
     if (e.key === 'Enter') { e.preventDefault(); ask(input); }
   };
 
-  // ЛОГИКА ДЛЯ KPI: Если в данных всего одна строка
   const isKPI = result && !result.error && result.data.rows && result.data.rows.length === 1;
 
   return (
     <>
       <div className="bg-elements"><div className="bg-wave"></div></div>
       <nav className="navbar">
-        <div className="logo">
+        <div className="logo" onClick={() => setView("analytics")}>
             <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" alt="Drivee" />
         </div>
-        <div className="nav-links"><a>Аналитика</a><a>Отчеты</a><a>Справка</a></div>
-        <button className="btn-primary" onClick={() => {setInput(""); setResult(null);}}>Новый чат</button>
+        <div className="nav-links">
+            <a className={view === "analytics" ? "active" : ""} onClick={() => setView("analytics")}>Аналитика</a>
+            <a className={view === "reports" ? "active" : ""} onClick={() => setView("reports")}>Отчеты</a>
+        </div>
+        <button className="btn-primary" onClick={() => {setInput(""); setResult(null); setView("analytics");}}>Новый запрос</button>
       </nav>
 
       <div className="app-container">
-        <div className="left-panel">
-          <h3 style={{marginTop: 0, fontSize: '18px'}}>Задать вопрос</h3>
-          <div className="search-wrapper">
-            <div className="ghost-text"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
-            <input type="text" className="search-input" value={input} 
-                   onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
-                   placeholder="Спроси Drivee..." />
-          </div>
-          <div style={{marginBottom: '20px'}}>
-            <div className="chip" onClick={() => ask("Выручка за вчера")}>Выручка за вчера</div>
-            <div className="chip" onClick={() => ask("Сравни отмены по городам")}>Отмены по городам</div>
-            <div className="chip" onClick={() => ask("Сколько всего заказов")}>Всего заказов</div>
-          </div>
-          {result && <div className="sql-code">{result.sql}</div>}
-        </div>
+        {view === "analytics" ? (
+          <>
+            <div className="left-panel">
+              <h3 style={{marginTop: 0, fontSize: '18px'}}>Задать вопрос</h3>
+              <div className="search-wrapper">
+                <div className="ghost-text"><span>{input}</span>{ghost && (input.endsWith(' ') ? ghost : ' ' + ghost)}</div>
+                <input type="text" className="search-input" value={input} 
+                       onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+                       placeholder="Спроси Drivee..." />
+              </div>
+              <div className="chips-container">
+                <div className="chip" onClick={() => ask("Выручка за вчера")}>Выручка за вчера</div>
+                <div className="chip" onClick={() => ask("Сравни отмены по городам")}>Отмены по городам</div>
+                <div className="chip" onClick={() => ask("Сколько всего заказов")}>Всего заказов</div>
+              </div>
+              {result && !result.error && <div className="sql-code">{result.sql}</div>}
+            </div>
 
-        <div className="right-panel">
+            <<div className="right-panel">
               {loading ? (
-                 <div className="loader"><div className="spinner"></div>Считаем...</div>
+                 <div className="loader"><div className="spinner"></div></div>
               ) : result && result.error ? (
                 /* ДОБАВЛЕН БЛОК ОШИБКИ */
                 <div style={{margin:'auto', color:'#ef4444', textAlign:'center', padding: '24px', background: '#fee2e2', borderRadius: '16px', border: '1px solid #f87171', width: '100%', maxWidth: '600px'}}>
@@ -221,53 +282,64 @@ function App() {
                     <div style={{color: '#4b5563', fontSize: '14px'}}>Понял как: <b>{result.explanation}</b></div>
                     <button className="btn-save" onClick={handleSave}>Сохранить в отчеты</button>
                   </div>
-              <div className="result-card">
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                  <span style={{fontWeight:700, fontSize:18, color: '#111827'}}>Результат анализа</span>
-                  <span className="badge">SQL Success</span>
-                </div>
+                 
+                  <div className="result-card">
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <span style={{fontWeight:700, fontSize:18}}>Результат</span>
+                      <span className="badge">SQL Success</span>
+                    </div>
 
-                {isKPI ? (
-                  /* ОТОБРАЖЕНИЕ KPI КАРТОЧКИ */
-                  <div className="kpi-container">
-                    <div className="kpi-label">{result.data.columns[result.data.columns.length - 1]}</div>
-                    <div className="kpi-value">
-                      {/* Берем последнее значение в строке (обычно это числовая метрика) */}
-                      {(() => {
-                          const val = result.data.rows[0][result.data.rows[0].length - 1];
-                          return typeof val === 'number' ? val.toLocaleString('ru-RU') : val;
-                      })()}
-                    </div>
+                    {isKPI ? (
+                      <div className="kpi-container">
+                        <div className="kpi-label">{result.data.columns[result.data.columns.length - 1]}</div>
+                        <div className="kpi-value">
+                          {(() => {
+                              const val = result.data.rows[0][result.data.rows[0].length - 1];
+                              return typeof val === 'number' ? val.toLocaleString('ru-RU') : val;
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="data-grid">
+                        <ChartView columns={result.data.columns} rows={result.data.rows} />
+                        <div style={{overflowY: 'auto', flexGrow: 1}}>
+                          <table>
+                            <thead><tr>{result.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+                            <tbody>
+                              {result.data.rows.slice(0, 15).map((row, i) => (
+                                <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  /* ОТОБРАЖЕНИЕ ГРАФИКА И ТАБЛИЦЫ */
-                  <div className="data-grid">
-                    <ChartView columns={result.data.columns} rows={result.data.rows} />
-                    <div style={{overflowY: 'auto', flexGrow: 1}}>
-                      <table>
-                        <thead><tr>{result.data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
-                        <tbody>
-                          {result.data.rows.slice(0, 15).map((row, i) => (
-                            <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="status-banner">
-                <div className="status-icon"><CheckIcon/></div>
-                Данные успешно загружены из базы Drivee
-              </div>
-            </>
-          ) : (
-            <div style={{margin:'auto', color:'#9ca3af', textAlign:'center'}}>
-                <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{opacity: 0.2, height: 40, marginBottom: 20}} />
-                <br/>Введите ваш вопрос в левой панели
+                </>
+              ) : (
+                <div style={{margin:'auto', color:'#9ca3af', textAlign:'center'}}>
+                  <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" style={{opacity: 0.2, height: 40, marginBottom: 20}} />
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          <div style={{width: '100%', overflowY: 'auto', background: '#f9fafb'}}>
+            <div style={{padding: '40px 40px 20px'}}>
+                <h1 style={{margin: 0, fontSize: '28px'}}>Отчеты</h1>
+            </div>
+            <div className="reports-grid">
+              {reports.map((rep) => (
+                <div key={rep.id} className="report-item" onClick={() => openReport(rep)}>
+                  <button className="btn-delete" onClick={(e) => deleteReport(e, rep.id)}><TrashIcon /></button>
+                  <h4>{rep.name}</h4>
+                  <p>{rep.question}</p>
+                  <span className="report-date">{rep.created_at}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
