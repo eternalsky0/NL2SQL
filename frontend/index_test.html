@@ -126,16 +126,37 @@ function ChartView({ columns, rows }) {
         datasets:[{
           label: columns[1] || 'Значение',
           data: rows.map(r => Number(r[1]) || 0).slice(0, 15),
-          backgroundColor: '#1e1e1e', // Черные столбцы с сайта Drivee
-          borderRadius: 8 // Мягкие столбцы
+          backgroundColor: '#1e1e1e', // Строгий графитовый цвет в спокойном состоянии
+          hoverBackgroundColor: '#96ea28', // Яркий фирменный зеленый при наведении мыши
+          borderRadius: 8 // Мягкие скругленные вершины столбцов
         }]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        responsive: true, 
+        maintainAspectRatio: false,
+        plugins: { 
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e1e1e', // Темная всплывающая подсказка
+            titleFont: { family: 'Noto Sans', size: 13 },
+            bodyFont: { family: 'Noto Sans', size: 14, weight: 'bold' },
+            padding: 12,
+            cornerRadius: 10,
+            displayColors: false // Убираем лишний цветной квадратик в тултипе
+          }
+        },
         scales: { 
-            y: { beginAtZero: true, grid: { color: '#f0f0f0' }, border: {display: false} },
-            x: { grid: { display: false }, border: {display: false} }
+            y: { 
+              beginAtZero: true, 
+              grid: { color: '#f0f0f0' }, 
+              border: {display: false},
+              ticks: { color: '#888888', font: { family: 'Noto Sans' } }
+            },
+            x: { 
+              grid: { display: false }, 
+              border: {display: false},
+              ticks: { color: '#888888', font: { family: 'Noto Sans' } }
+            }
         }
       }
     });
