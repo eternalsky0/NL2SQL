@@ -8,6 +8,9 @@ from pathlib import Path
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
+
 import yaml
 import pandas as pd
 import sqlglot
@@ -16,6 +19,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import httpx
 from openai import AsyncOpenAI
 
 import reports_store
@@ -41,11 +45,27 @@ logging.basicConfig(level=logging.INFO)
 _log = logging.getLogger(__name__)
 _log.info("DB_PATH = %s  (exists: %s)", DB_PATH, Path(DB_PATH).exists())
 
-OLLAMA_URL   = os.getenv("OLLAMA_URL", "http://localhost:11434/v1")
-FAST_MODEL   = os.getenv("FAST_MODEL", "qwen2.5-coder:1.5b")
-STRONG_MODEL = os.getenv("STRONG_MODEL", "qwen2.5-coder:7b")
+OPENROUTER_URL = os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1")
+OPENROUTER_KEY = os.getenv("OPENROUTER_KEY", "")
+FAST_MODEL     = os.getenv("FAST_MODEL", "meta-llama/llama-3-8b-instruct")
+STRONG_MODEL   = os.getenv("STRONG_MODEL", "deepseek/deepseek-v3.2")
 
-client = AsyncOpenAI(base_url=OLLAMA_URL, api_key="local")
+HTTPS_PROXY = os.getenv("HTTPS_PROXY", "")
+
+_timeout = httpx.Timeout(connect=30.0, read=120.0, write=30.0, pool=10.0)
+_http_client = httpx.AsyncClient(proxy=HTTPS_PROXY, timeout=_timeout) if HTTPS_PROXY else httpx.AsyncClient(timeout=_timeout)
+
+client = AsyncOpenAI(
+    base_url=OPENROUTER_URL,
+    api_key=OPENROUTER_KEY,
+    max_retries=2,
+    timeout=120.0,
+    http_client=_http_client,
+    default_headers={
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "Drivee NL2SQL",
+    },
+)
 
 # ── Semantic layer ────────────────────────────────────────────────
 def _load_semantic():
@@ -396,9 +416,13 @@ async def query(req: QueryReq):
             model=STRONG_MODEL,
             messages=messages,
             temperature=0.1,
-            response_format={"type": "json_object"},
         )
-        llm_json = json.loads(response.choices[0].message.content)
+        raw_content = response.choices[0].message.content or ""
+        _log.info("LLM raw response: %s", raw_content[:500])
+        m = re.search(r"\{.*\}", raw_content, re.DOTALL)
+        if not m:
+            raise ValueError(f"LLM не вернул JSON. Ответ: {raw_content[:300]}")
+        llm_json = json.loads(m.group(0))
         sql_raw = llm_json.get("sql", "")
 
         try:
@@ -438,6 +462,7 @@ async def query(req: QueryReq):
         }
 
     except Exception as e:
+        _log.error("Query error: %s", e, exc_info=True)
         con.rollback()
         raise HTTPException(status_code=400, detail=str(e))
     finally:
@@ -642,18 +667,20 @@ async def mark_read(delivery_id: int):
 @app.get("/health")
 async def health():
     try:
-        models_resp = await client.models.list()
-        model_ids = [m.id for m in models_resp.data]
-        ollama_ok = True
+        await client.chat.completions.create(
+            model=FAST_MODEL,
+            messages=[{"role": "user", "content": "ping"}],
+            max_tokens=1,
+        )
+        llm_ok = True
     except Exception:
-        model_ids = []
-        ollama_ok = False
+        llm_ok = False
     return {
-        "ollama": ollama_ok,
+        "llm": llm_ok,
+        "fast_model": FAST_MODEL,
+        "strong_model": STRONG_MODEL,
         "db": Path(DB_PATH).exists(),
         "reports_db": Path(reports_store.DB_PATH).exists(),
-        "ollama_models": model_ids,
-        "fast_loaded": True,
     }
 
 
