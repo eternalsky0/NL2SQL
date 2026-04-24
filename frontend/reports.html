@@ -25,7 +25,7 @@
     #root { display: flex; }
     .layout { display: flex; height: 100vh; width: 100%; }
 
-    /* ── Sidebar (matches index.html) ── */
+    /* ── Sidebar ── */
     .sidebar { width: var(--sidebar-width); flex-shrink: 0; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 24px 12px; }
     .logo { padding: 0 12px; margin-bottom: 32px; cursor: pointer; }
     .logo img { height: 22px; display: block; }
@@ -54,6 +54,28 @@
 
     /* ── Main ── */
     .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background: #fff; }
+    
+    /* ── Top bar with notifications ── */
+    .top-bar { padding: 16px 40px; border-bottom: 1px solid var(--border-color); background: #fff; display: flex; align-items: center; justify-content: flex-end; gap: 16px; flex-shrink: 0; }
+    .top-bar-notif { position: relative; cursor: pointer; padding: 8px 12px; border-radius: 12px; transition: 0.15s; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #888; border: 1px solid transparent; }
+    .top-bar-notif:hover { background: #f5f5f7; color: #444; border-color: var(--border-color); }
+    .top-bar-notif .badge { position: absolute; top: 2px; right: 2px; background: #ef4444; color: #fff; border-radius: 10px; font-size: 10px; font-weight: 800; padding: 1px 6px; min-width: 18px; text-align: center; }
+    .top-bar-notif .badge.green { background: var(--brand-green); color: #000; }
+    
+    /* ── Notification dropdown ── */
+    .notif-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 420px; max-height: 480px; overflow-y: auto; background: #fff; border: 1px solid var(--border-color); border-radius: 20px; box-shadow: 0 16px 48px rgba(0,0,0,0.12); z-index: 500; animation: slideDown 0.15s ease; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .notif-dropdown-header { padding: 16px 20px 12px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .notif-item { padding: 14px 20px; border-bottom: 1px solid #f5f5f7; cursor: pointer; transition: 0.1s; display: flex; align-items: flex-start; gap: 12px; }
+    .notif-item:hover { background: #fafafa; }
+    .notif-item.unread { background: #f9fef0; }
+    .notif-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .notif-content { flex: 1; min-width: 0; }
+    .notif-subject { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .notif-preview { font-size: 11.5px; color: #888; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notif-time { font-size: 11px; color: #bbb; flex-shrink: 0; font-family: monospace; }
+    .notif-empty { padding: 32px 20px; text-align: center; color: #ccc; font-size: 13px; }
+    
     .content { flex: 1; overflow-y: auto; padding: 32px 40px; }
 
     /* ── Buttons ── */
@@ -280,28 +302,6 @@
     .sql-toggle:hover { color: #666; }
     .sql-block { background: #f8f8fa; border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; font-family: monospace; font-size: 12px; color: #555; overflow-x: auto; white-space: pre; margin-top: 10px; line-height: 1.7; }
 
-    /* ── Alerts ── */
-    .alerts-grid { display: flex; flex-direction: column; gap: 12px; max-width: 800px; }
-    .alert-card { background: #fff; border: 1px solid var(--border-color); border-radius: 20px; padding: 20px 24px; display: grid; grid-template-columns: 1fr auto; gap: 12px 24px; align-items: start; transition: border-color 0.15s, box-shadow 0.15s; }
-    .alert-card:hover { border-color: #d4d4d8; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-    .alert-card.inactive { opacity: 0.5; }
-    .alert-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-    .alert-meta { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .alert-expr { font-family: monospace; font-size: 12px; background: #f9fef0; border: 1px solid #d9f99d; color: #65a30d; padding: 2px 8px; border-radius: 6px; }
-    .alert-status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-    .alert-actions { display: flex; gap: 6px; align-items: center; }
-
-    /* ── Inbox ── */
-    .inbox-list { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
-    .inbox-card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 20px; display: flex; align-items: flex-start; gap: 14px; cursor: pointer; transition: border-color 0.12s; }
-    .inbox-card:hover { border-color: #ccc; }
-    .inbox-card.unread { border-left: 3px solid var(--brand-green); }
-    .i-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
-    .i-body { flex: 1; min-width: 0; }
-    .i-subj { font-size: 13.5px; font-weight: 600; margin-bottom: 3px; }
-    .i-prev { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; }
-    .i-time { font-size: 11px; color: #bbb; flex-shrink: 0; font-family: monospace; }
-
     /* ── Spinner ── */
     .spin { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.08); border-top-color: currentColor; border-radius: 50%; animation: rot 0.65s linear infinite; flex-shrink: 0; display: inline-block; }
     @keyframes rot { to { transform: rotate(360deg); } }
@@ -312,6 +312,17 @@
     .toast.ok  { border-left: 3px solid var(--brand-green); }
     .toast.err { border-left: 3px solid #dc2626; }
     @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── Alerts modal ── */
+    .alerts-modal { width: 100%; max-width: 720px; }
+    .alert-card { background: #fff; border: 1px solid var(--border-color); border-radius: 16px; padding: 18px 20px; display: grid; grid-template-columns: 1fr auto; gap: 10px 20px; align-items: start; transition: border-color 0.15s; }
+    .alert-card:hover { border-color: #d4d4d8; }
+    .alert-card.inactive { opacity: 0.5; }
+    .alert-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .alert-meta { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .alert-expr { font-family: monospace; font-size: 12px; background: #f9fef0; border: 1px solid #d9f99d; color: #65a30d; padding: 2px 8px; border-radius: 6px; }
+    .alert-status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .alert-actions { display: flex; gap: 6px; align-items: center; }
 
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
@@ -699,7 +710,241 @@ function RunRow({ run, report, onView }) {
   );
 }
 
-// ── Reports tab ── обновлённая версия с единым дизайном ──
+// ── Notification dropdown ─────────────────────────────────────────
+function NotificationDropdown({ type, open, onClose, items, onMarkRead, onOpenAlerts }) {
+  if (!open) return null;
+  
+  const isInbox = type === 'inbox';
+  const title = isInbox ? 'Входящие' : 'Алерты';
+  const unreadItems = isInbox ? items.filter(i => !i.read_at) : items.filter(a => !a.enabled ? false : true);
+  
+  return (
+    <div className="notif-dropdown" onClick={e => e.stopPropagation()}>
+      <div className="notif-dropdown-header">
+        <span>{title}</span>
+        {isInbox && unreadItems.length > 0 && (
+          <button 
+            className="btn btn-ghost btn-sm"
+            onClick={() => unreadItems.forEach(i => onMarkRead(i.id))}
+          >
+            Прочитать все
+          </button>
+        )}
+        {!isInbox && (
+          <button 
+            className="btn btn-ghost btn-sm"
+            onClick={() => { onClose(); onOpenAlerts(); }}
+          >
+            Управление
+          </button>
+        )}
+      </div>
+      {items.length === 0 ? (
+        <div className="notif-empty">
+          {isInbox ? 'Уведомлений пока нет' : 'Алертов пока нет'}
+        </div>
+      ) : (
+        items.slice(0, 8).map(item => (
+          <div 
+            key={item.id} 
+            className={`notif-item ${isInbox && !item.read_at ? 'unread' : ''}`}
+            onClick={() => isInbox && !item.read_at && onMarkRead(item.id)}
+          >
+            <div className="notif-dot" style={{ 
+              background: isInbox 
+                ? (item.read_at ? '#ccc' : '#96ea28')
+                : (item.last_triggered_at ? '#ef4444' : item.last_checked_at ? '#16a34a' : '#d4d4d8')
+            }} />
+            <div className="notif-content">
+              <div className="notif-subject">{item.subject || item.name || item.report_name}</div>
+              <div className="notif-preview">{item.preview || (item.operator && `значение ${item.operator} ${item.threshold}`) || '—'}</div>
+            </div>
+            <div className="notif-time">{fmtDate(item.created_at || item.last_checked_at)}</div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+// ── Alerts modal ──────────────────────────────────────────────────
+const OPERATORS = [
+  { value: '<',  label: 'меньше' },
+  { value: '>',  label: 'больше' },
+  { value: '<=', label: '≤' },
+  { value: '>=', label: '≥' },
+  { value: '=',  label: 'равно' },
+];
+
+function AlertForm({ reports, onClose, onSaved, toast }) {
+  const [name, setName]         = useState('');
+  const [reportId, setReportId] = useState(reports[0]?.id || '');
+  const [operator, setOperator] = useState('<');
+  const [threshold, setThreshold] = useState('');
+  const [rcptInput, setRcptInput] = useState('');
+  const [rcpts, setRcpts]       = useState([]);
+  const [saving, setSaving]     = useState(false);
+
+  const addRcpt = () => {
+    const v = rcptInput.trim();
+    if (v && !rcpts.includes(v)) setRcpts(r => [...r, v]);
+    setRcptInput('');
+  };
+
+  const save = async () => {
+    if (!name || !reportId || threshold === '') { toast('Заполните все обязательные поля', 'err'); return; }
+    setSaving(true);
+    try {
+      const r = await fetch(`${API}/alerts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, report_id: Number(reportId), operator, threshold: Number(threshold), recipients: rcpts }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      toast('Алерт создан');
+      onSaved(await r.json());
+    } catch (e) { toast(e.message, 'err'); }
+    setSaving(false);
+  };
+
+  const rep = reports.find(r => r.id === Number(reportId));
+
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <div className="modal-head">
+          <h2>Новый алерт</h2>
+          <button className="close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="field">
+            <label>Название *</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Выручка упала" autoFocus />
+          </div>
+          <div className="field">
+            <label>Отчёт для проверки *</label>
+            <select value={reportId} onChange={e => setReportId(e.target.value)}>
+              {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            {rep && <div className="field-hint">{rep.question}</div>}
+          </div>
+          <div className="field">
+            <label>Условие срабатывания *</label>
+            <div style={{display:'flex', gap:8, alignItems:'center'}}>
+              <span style={{fontSize:13,color:'#888',flexShrink:0}}>Первое значение</span>
+              <select value={operator} onChange={e => setOperator(e.target.value)} style={{width:'auto',flex:'0 0 auto'}}>
+                {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <input type="number" value={threshold} onChange={e => setThreshold(e.target.value)} placeholder="1000" style={{flex:1}} />
+            </div>
+            {threshold !== '' && <div className="field-hint" style={{color:'#65a30d'}}>Сработает если: значение {operator} {threshold}</div>}
+          </div>
+          <div className="field">
+            <label>Email-получатели <span style={{fontWeight:400,textTransform:'none',letterSpacing:0}}>(необязательно)</span></label>
+            <div style={{display:'flex',gap:8}}>
+              <input type="email" value={rcptInput} onChange={e => setRcptInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRcpt()} placeholder="ops@company.com" />
+              <button className="btn btn-ghost btn-sm" onClick={addRcpt} style={{flex:'0 0 auto'}}>+ Добавить</button>
+            </div>
+            {rcpts.length > 0 && (
+              <div className="rcpt-list">
+                {rcpts.map(r => <span key={r} className="rcpt-tag">{r} <span className="rcpt-rm" onClick={() => setRcpts(x => x.filter(v => v !== r))}>✕</span></span>)}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
+          <button className="btn btn-green" onClick={save} disabled={saving}>
+            {saving && <span className="spin" />} Создать алерт
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AlertsModal({ open, alerts, reports, onClose, onRefresh, toast }) {
+  const [showForm, setShowForm] = useState(false);
+  
+  if (!open) return null;
+
+  const toggle = async (alert) => {
+    try {
+      const updated = await fetch(`${API}/alerts/${alert.id}`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ enabled: !alert.enabled }),
+      }).then(r => r.json());
+      onRefresh();
+      toast(alert.enabled ? 'Алерт выключен' : 'Алерт включен');
+    } catch (e) { toast(e.message, 'err'); }
+  };
+
+  const del = async (alert) => {
+    if (!confirm(`Удалить алерт «${alert.name}»?`)) return;
+    await fetch(`${API}/alerts/${alert.id}`, { method: 'DELETE' });
+    onRefresh();
+    toast('Алерт удалён');
+  };
+
+  const getReport = (id) => reports.find(r => r.id === id);
+
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box alerts-modal">
+        <div className="modal-head">
+          <h2>Алерты</h2>
+          <div style={{display:'flex', gap:8}}>
+            <button className="btn btn-green btn-sm" onClick={() => setShowForm(true)} disabled={reports.length === 0}>+ Новый</button>
+            <button className="close-btn" onClick={onClose}>✕</button>
+          </div>
+        </div>
+        <div className="modal-body">
+          {alerts.length === 0 ? (
+            <div className="empty" style={{padding: '40px 20px'}}>
+              <h3>Алертов пока нет</h3>
+              <p style={{fontSize:13}}>Создайте первый — он проверяется каждые 15 минут</p>
+            </div>
+          ) : (
+            alerts.map(alert => {
+              const rep = getReport(alert.report_id);
+              const triggered = alert.last_triggered_at;
+              return (
+                <div key={alert.id} className={`alert-card ${!alert.enabled ? 'inactive' : ''}`}>
+                  <div>
+                    <div className="alert-name">{alert.name}</div>
+                    <div className="alert-meta">
+                      {rep && <span>{rep.name}</span>}
+                      <span className="alert-expr">значение {alert.operator} {alert.threshold}</span>
+                      {alert.last_value != null && <span style={{color:'#aaa'}}>последнее: {alert.last_value}</span>}
+                      {triggered
+                        ? <><span className="alert-status-dot" style={{background:'#ef4444'}} />  сработал {fmtDate(triggered)}</>
+                        : alert.last_checked_at
+                          ? <><span className="alert-status-dot" style={{background:'#16a34a'}} /> в норме</>
+                          : <><span className="alert-status-dot" style={{background:'#d4d4d8'}} /> не проверялся</>
+                      }
+                    </div>
+                  </div>
+                  <div className="alert-actions">
+                    <label className="toggle" onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={!!alert.enabled} onChange={() => toggle(alert)} />
+                      <div className="toggle-track" /><div className="toggle-thumb" />
+                    </label>
+                    <button className="btn btn-danger btn-sm" onClick={() => del(alert)}>✕</button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+      {showForm && reports.length > 0 && (
+        <AlertForm reports={reports} onClose={() => setShowForm(false)} onSaved={(a) => { onRefresh(); setShowForm(false); }} toast={toast} />
+      )}
+    </div>
+  );
+}
+
+// ── Reports main content ──────────────────────────────────────────
 function ReportsTab({ toast }) {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -982,264 +1227,86 @@ function ReportsTab({ toast }) {
   );
 }
 
-// ── Inbox tab ─────────────────────────────────────────────────────
-function InboxTab({ toast, onCountChange }) {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+// ── Top bar ───────────────────────────────────────────────────────
+function TopBar({ unreadInbox, unreadAlerts, inboxItems, alertItems, onMarkRead, onOpenAlerts }) {
+  const [openDropdown, setOpenDropdown] = useState(null); // 'inbox' | 'alerts' | null
+  
   useEffect(() => {
-    fetch(`${API}/inbox`).then(r => r.json())
-      .then(d => { setItems(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    onCountChange(items.filter(i => !i.read_at).length);
-  }, [items]);
-
-  const markRead = async (id) => {
-    await fetch(`${API}/inbox/${id}/read`, { method: "POST" });
-    setItems(i => i.map(x => x.id === id ? {...x, read_at: new Date().toISOString()} : x));
-  };
-
-  const header = (
-    <div className="page-header">
-      <div className="page-title">Входящие</div>
-      <div className="page-subtitle">Уведомления о выполненных отчётах</div>
-    </div>
-  );
-  if (loading) return <>{header}<div style={{display:"flex",alignItems:"center",gap:10,color:"#aaa",padding:"60px 0"}}><span className="spin" style={{color:"#aaa"}} /> Загрузка…</div></>;
-  if (!items.length) return <>{header}<div className="empty"><h3>Входящих нет</h3><p>Когда отчёт выполнится — уведомление появится здесь</p></div></>;
-  return (
-    <>
-    {header}
-    <div className="inbox-list">
-      {items.map(it => (
-        <div key={it.id} className={`inbox-card ${!it.read_at ? "unread" : ""}`} onClick={() => !it.read_at && markRead(it.id)}>
-          <div className="i-dot" style={{ background: it.read_at ? "#ccc" : "#96ea28" }} />
-          <div className="i-body">
-            <div className="i-subj">{it.subject || it.report_name}</div>
-            <div className="i-prev">{it.preview || "—"}</div>
-          </div>
-          <div className="i-time">{fmtDate(it.created_at)}</div>
-        </div>
-      ))}
-    </div>
-    </>
-  );
-}
-
-// ── Alerts tab ────────────────────────────────────────────────────
-const OPERATORS = [
-  { value: '<',  label: 'меньше' },
-  { value: '>',  label: 'больше' },
-  { value: '<=', label: '≤' },
-  { value: '>=', label: '≥' },
-  { value: '=',  label: 'равно' },
-];
-
-function AlertForm({ reports, onClose, onSaved, toast }) {
-  const [name, setName]         = useState('');
-  const [reportId, setReportId] = useState(reports[0]?.id || '');
-  const [operator, setOperator] = useState('<');
-  const [threshold, setThreshold] = useState('');
-  const [rcptInput, setRcptInput] = useState('');
-  const [rcpts, setRcpts]       = useState([]);
-  const [saving, setSaving]     = useState(false);
-
-  const addRcpt = () => {
-    const v = rcptInput.trim();
-    if (v && !rcpts.includes(v)) setRcpts(r => [...r, v]);
-    setRcptInput('');
-  };
-
-  const save = async () => {
-    if (!name || !reportId || threshold === '') { toast('Заполните все обязательные поля', 'err'); return; }
-    setSaving(true);
-    try {
-      const r = await fetch(`${API}/alerts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, report_id: Number(reportId), operator, threshold: Number(threshold), recipients: rcpts }),
-      });
-      if (!r.ok) throw new Error(await r.text());
-      toast('Алерт создан');
-      onSaved(await r.json());
-    } catch (e) { toast(e.message, 'err'); }
-    setSaving(false);
-  };
-
-  const rep = reports.find(r => r.id === Number(reportId));
+    if (!openDropdown) return;
+    const close = (e) => {
+      if (!e.target.closest('.top-bar-notif') && !e.target.closest('.notif-dropdown')) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [openDropdown]);
 
   return (
-    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box">
-        <div className="modal-head">
-          <h2>Новый алерт</h2>
-          <button className="close-btn" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          <div className="field">
-            <label>Название *</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Выручка упала" autoFocus />
-          </div>
-          <div className="field">
-            <label>Отчёт для проверки *</label>
-            <select value={reportId} onChange={e => setReportId(e.target.value)}>
-              {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
-            {rep && <div className="field-hint">{rep.question}</div>}
-          </div>
-          <div className="field">
-            <label>Условие срабатывания *</label>
-            <div style={{display:'flex', gap:8, alignItems:'center'}}>
-              <span style={{fontSize:13,color:'#888',flexShrink:0}}>Первое значение</span>
-              <select value={operator} onChange={e => setOperator(e.target.value)} style={{width:'auto',flex:'0 0 auto'}}>
-                {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <input type="number" value={threshold} onChange={e => setThreshold(e.target.value)} placeholder="1000" style={{flex:1}} />
-            </div>
-            {threshold !== '' && <div className="field-hint" style={{color:'#65a30d'}}>Сработает если: значение {operator} {threshold}</div>}
-          </div>
-          <div className="field">
-            <label>Email-получатели <span style={{fontWeight:400,textTransform:'none',letterSpacing:0}}>(необязательно)</span></label>
-            <div style={{display:'flex',gap:8}}>
-              <input type="email" value={rcptInput} onChange={e => setRcptInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRcpt()} placeholder="ops@company.com" />
-              <button className="btn btn-ghost btn-sm" onClick={addRcpt} style={{flex:'0 0 auto'}}>+ Добавить</button>
-            </div>
-            {rcpts.length > 0 && (
-              <div className="rcpt-list">
-                {rcpts.map(r => <span key={r} className="rcpt-tag">{r} <span className="rcpt-rm" onClick={() => setRcpts(x => x.filter(v => v !== r))}>✕</span></span>)}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="modal-foot">
-          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
-          <button className="btn btn-green" onClick={save} disabled={saving}>
-            {saving && <span className="spin" />} Создать алерт
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AlertsTab({ toast }) {
-  const [alerts, setAlerts]     = useState([]);
-  const [reports, setReports]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [showForm, setShowForm] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [al, rep] = await Promise.all([
-        fetch(`${API}/alerts`).then(r => r.json()),
-        fetch(`${API}/reports`).then(r => r.json()),
-      ]);
-      setAlerts(al); setReports(rep);
-    } catch {}
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const toggle = async (alert) => {
-    try {
-      const updated = await fetch(`${API}/alerts/${alert.id}`, {
-        method: 'PATCH', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ enabled: !alert.enabled }),
-      }).then(r => r.json());
-      setAlerts(as => as.map(a => a.id === updated.id ? updated : a));
-    } catch (e) { toast(e.message, 'err'); }
-  };
-
-  const del = async (alert) => {
-    if (!confirm(`Удалить алерт «${alert.name}»?`)) return;
-    await fetch(`${API}/alerts/${alert.id}`, { method: 'DELETE' });
-    setAlerts(as => as.filter(a => a.id !== alert.id));
-    toast('Алерт удалён');
-  };
-
-  const getReport = (id) => reports.find(r => r.id === id);
-
-  const header = (
-    <div className="page-header">
-      <div className="page-title">Алерты</div>
-      <div className="page-subtitle">Уведомления при достижении пороговых значений</div>
-    </div>
-  );
-
-  if (loading) return <>{header}<div style={{display:'flex',alignItems:'center',gap:10,color:'#aaa',padding:'60px 0'}}><span className="spin" style={{color:'#aaa'}} /> Загрузка…</div></>;
-
-  return (
-    <>
-      {header}
-      {alerts.length === 0 ? (
-        <div className="empty"><h3>Алертов пока нет</h3><p style={{fontSize:13}}>Создайте первый — он проверяется каждые 15 минут</p></div>
-      ) : (
-        <div className="alerts-grid">
-          {alerts.map(alert => {
-            const rep = getReport(alert.report_id);
-            const triggered = alert.last_triggered_at;
-            return (
-              <div key={alert.id} className={`alert-card ${!alert.enabled ? 'inactive' : ''}`}>
-                <div>
-                  <div className="alert-name">{alert.name}</div>
-                  <div className="alert-meta">
-                    {rep && <span>{rep.name}</span>}
-                    <span className="alert-expr">значение {alert.operator} {alert.threshold}</span>
-                    {alert.last_value != null && <span style={{color:'#aaa'}}>последнее: {alert.last_value}</span>}
-                    {triggered
-                      ? <><span className="alert-status-dot" style={{background:'#ef4444'}} />  сработал {fmtDate(triggered)}</>
-                      : alert.last_checked_at
-                        ? <><span className="alert-status-dot" style={{background:'#16a34a'}} /> в норме</>
-                        : <><span className="alert-status-dot" style={{background:'#d4d4d8'}} /> не проверялся</>
-                    }
-                  </div>
-                </div>
-                <div className="alert-actions">
-                  <label className="toggle" onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" checked={!!alert.enabled} onChange={() => toggle(alert)} />
-                    <div className="toggle-track" /><div className="toggle-thumb" />
-                  </label>
-                  <button className="btn btn-danger btn-sm" onClick={() => del(alert)}>✕</button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="fab">
-        <button className="btn-new-chat" onClick={() => setShowForm(true)} disabled={reports.length === 0}
-          style={{background:'var(--brand-green)', border:'none', borderRadius:16, padding:'14px 24px', fontSize:14, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8, boxShadow:'0 8px 24px rgba(150,234,40,0.3)'}}>
-          + Новый алерт
-        </button>
+    <div className="top-bar">
+      <div className="top-bar-notif" onClick={() => setOpenDropdown(openDropdown === 'inbox' ? null : 'inbox')}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+          <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+        </svg>
+        Входящие
+        {unreadInbox > 0 && <span className="badge">{unreadInbox}</span>}
+        <NotificationDropdown 
+          type="inbox" 
+          open={openDropdown === 'inbox'} 
+          onClose={() => setOpenDropdown(null)} 
+          items={inboxItems} 
+          onMarkRead={onMarkRead}
+          onOpenAlerts={onOpenAlerts}
+        />
       </div>
 
-      {showForm && reports.length > 0 && (
-        <AlertForm reports={reports} onClose={() => setShowForm(false)} onSaved={(a) => { setAlerts(as => [a, ...as]); setShowForm(false); }} toast={toast} />
-      )}
-    </>
+      <div className="top-bar-notif" onClick={() => setOpenDropdown(openDropdown === 'alerts' ? null : 'alerts')}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        Алерты
+        {unreadAlerts > 0 && <span className="badge green">{unreadAlerts}</span>}
+        <NotificationDropdown 
+          type="alerts" 
+          open={openDropdown === 'alerts'} 
+          onClose={() => setOpenDropdown(null)} 
+          items={alertItems} 
+          onMarkRead={onMarkRead}
+          onOpenAlerts={onOpenAlerts}
+        />
+      </div>
+
+      <div className="top-bar-notif" onClick={onOpenAlerts}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Настроить
+      </div>
+    </div>
   );
 }
 
 // ── App ────────────────────────────────────────────────────────────
 function App() {
-  const [tab, setTab] = useState("reports");
-  const [unread, setUnread] = useState(0);
   const { toasts, toast } = useToast();
   const [chats, setChats] = useState([]);
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
   });
+  const [inboxItems, setInboxItems] = useState([]);
+  const [alertItems, setAlertItems] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [showAlertsModal, setShowAlertsModal] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadChats();
-      pollUnread();
+      loadInbox();
+      loadAlerts();
+      loadReports();
     }
   }, [user]);
 
@@ -1250,17 +1317,32 @@ function App() {
     } catch {}
   };
 
-  const pollUnread = async () => {
+  const loadInbox = async () => {
     try {
-      const r = await fetch(`${API}/inbox/unread_count`);
-      const d = await r.json();
-      setUnread(d.count || 0);
+      const res = await fetch(`${API}/inbox`);
+      setInboxItems(await res.json());
+    } catch {}
+  };
+
+  const loadAlerts = async () => {
+    try {
+      const res = await fetch(`${API}/alerts`);
+      setAlertItems(await res.json());
+    } catch {}
+  };
+
+  const loadReports = async () => {
+    try {
+      setReports(await fetch(`${API}/reports`).then(r => r.json()));
     } catch {}
   };
 
   useEffect(() => {
     if (!user) return;
-    const t = setInterval(pollUnread, 15000);
+    const t = setInterval(() => {
+      loadInbox();
+      loadAlerts();
+    }, 15000);
     return () => clearInterval(t);
   }, [user]);
 
@@ -1268,6 +1350,20 @@ function App() {
     localStorage.clear();
     window.location.href = 'index.html';
   };
+
+  const markInboxRead = async (id) => {
+    await fetch(`${API}/inbox/${id}/read`, { method: "POST" });
+    setInboxItems(i => i.map(x => x.id === id ? {...x, read_at: new Date().toISOString()} : x));
+  };
+
+  const deleteChat = async (chatId, e) => {
+    e.stopPropagation();
+    await fetch(`${API}/chats/${chatId}`, { method: "DELETE" });
+    setChats(cs => cs.filter(c => c.id !== chatId));
+  };
+
+  const unreadInbox = inboxItems.filter(i => !i.read_at).length;
+  const enabledAlerts = alertItems.filter(a => a.enabled).length;
 
   return (
     <div className="layout">
@@ -1284,26 +1380,24 @@ function App() {
             <svg className="icon-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Чат
           </a>
-          <div className={`nav-item ${tab === "reports" ? "active" : ""}`} onClick={() => setTab("reports")}>
+          <div className="nav-item active">
             <svg className="icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Отчёты
-          </div>
-          <div className={`nav-item ${tab === "inbox" ? "active" : ""}`} onClick={() => setTab("inbox")}>
-            <svg className="icon-svg" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-            Входящие
-            {unread > 0 && <span className="nav-badge">{unread}</span>}
           </div>
           <a href="dashboard.html" className="nav-item">
             <svg className="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Дашборд
           </a>
-          <div className={`nav-item ${tab === "alerts" ? "active" : ""}`} onClick={() => setTab("alerts")}>
-            <svg className="icon-svg" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            Алерты
-          </div>
+          <a href="index.html?view=archive" className="nav-item">
+            <svg className="icon-svg" viewBox="0 0 24 24"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3m18 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8m18 0H3m7 5h4"/></svg>
+            Архив
+          </a>
+          <a href="index.html?view=community" className="nav-item">
+            <svg className="icon-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m14 10v-2a4 4 0 0 0-3-3.87"/></svg>
+            Сообщество
+          </a>
         </div>
 
-        {/* Chat history */}
         <div className="history-label">Недавние</div>
         <div className="chat-list">
           {chats.map(c => (
@@ -1315,7 +1409,7 @@ function App() {
               <div className="chat-item-title">{c.title}</div>
               <button
                 className="btn-del-chat"
-                onClick={(e) => { e.stopPropagation(); fetch(`${API}/chats/${c.id}`, { method: "DELETE" }).then(loadChats); }}
+                onClick={(e) => deleteChat(c.id, e)}
               >
                 <Icons.Trash />
               </button>
@@ -1330,12 +1424,27 @@ function App() {
       </nav>
 
       <div className="main">
+        <TopBar 
+          unreadInbox={unreadInbox}
+          unreadAlerts={enabledAlerts}
+          inboxItems={inboxItems}
+          alertItems={alertItems}
+          onMarkRead={markInboxRead}
+          onOpenAlerts={() => setShowAlertsModal(true)}
+        />
         <div className="content">
-          {tab === "reports" && <ReportsTab toast={toast} />}
-          {tab === "inbox"   && <InboxTab toast={toast} onCountChange={setUnread} />}
-          {tab === "alerts"  && <AlertsTab toast={toast} />}
+          <ReportsTab toast={toast} />
         </div>
       </div>
+
+      <AlertsModal 
+        open={showAlertsModal}
+        alerts={alertItems}
+        reports={reports}
+        onClose={() => setShowAlertsModal(false)}
+        onRefresh={() => { loadAlerts(); }}
+        toast={toast}
+      />
 
       <Toasts toasts={toasts} />
     </div>
