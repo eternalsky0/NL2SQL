@@ -612,19 +612,19 @@ async def suggest_chips(req: ChipsReq):
 # ── Insight ───────────────────────────────────────────────────────
 @app.post("/insight")
 async def generate_insight(req: InsightReq):
-    preview = req.rows[:20]
+    preview = req.rows[:50]
     header = "\t".join(req.columns)
     body = "\n".join("\t".join(str(v) for v in row) for row in preview)
-    suffix = f"\n(и ещё {len(req.rows)-20} строк)" if len(req.rows) > 20 else ""
+    suffix = f"\n(и ещё {len(req.rows)-50} строк)" if len(req.rows) > 50 else ""
     try:
         resp = await client.chat.completions.create(
-            model=FAST_MODEL,
+            model=STRONG_MODEL,
             messages=[
                 {"role": "system", "content": INSIGHT_SYSTEM},
                 {"role": "user", "content": f"Вопрос: {req.question}\n\nДанные:\n{header}\n{body}{suffix}"},
             ],
             temperature=0.3,
-            max_tokens=150,
+            max_tokens=200,
         )
         return {"insight": (resp.choices[0].message.content or "").strip()}
     except Exception as e:
