@@ -1327,15 +1327,15 @@ function App() {
   const [showAlertsModal, setShowAlertsModal] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      loadChats();
-      loadInbox();
-      loadAlerts();
-      loadReports();
-    }
+    if (!user) { window.location.href = 'index.html'; return; }
+    loadChats();
+    loadInbox();
+    loadAlerts();
+    loadReports();
   }, [user]);
 
   const loadChats = async () => {
+    if (!user) return;
     try {
       const res = await fetch(`${API}/chats/${user.username}`);
       setChats(await res.json());
@@ -1363,13 +1363,12 @@ function App() {
   };
 
   useEffect(() => {
-    if (!user) return;
     const t = setInterval(() => {
       loadInbox();
       loadAlerts();
     }, 15000);
     return () => clearInterval(t);
-  }, [user]);
+  }, []);
 
   const handleLogout = () => {
     localStorage.clear();
