@@ -245,22 +245,45 @@ def validate_and_fix_sql(sql: str, role: str = "user") -> str:
                 raise ValueError(f"Разрешены только SELECT-запросы. Обнаружено: {kw}")
 
     allowed = {"orders"}
+
+    def _regex_validate(s: str) -> str:
+        """Fallback validation when sqlglot can't parse the SQL."""
+        upper = s.upper()
+        if not re.search(r'\bSELECT\b', upper):
+            raise ValueError("Разрешены только SELECT-запросы")
+        cte_names_fb = {m.group(1).lower() for m in re.finditer(r'\bWITH\s+(\w+)\s+AS\b', s, re.IGNORECASE)}
+        cte_names_fb |= {m.group(1).lower() for m in re.finditer(r',\s*(\w+)\s+AS\s*\(', s, re.IGNORECASE)}
+        from_tables = {m.group(1).lower() for m in re.finditer(r'\bFROM\s+(\w+)', s, re.IGNORECASE)}
+        join_tables = {m.group(1).lower() for m in re.finditer(r'\bJOIN\s+(\w+)', s, re.IGNORECASE)}
+        bad_fb = (from_tables | join_tables) - cte_names_fb - allowed
+        if bad_fb:
+            raise ValueError(f"Таблица не разрешена: {bad_fb}")
+        if not re.search(r'\bLIMIT\b', upper):
+            s = s.rstrip(";") + " LIMIT 1000"
+        return s
+
     try:
         parsed = sqlglot.parse_one(sql, dialect="sqlite")
-        if not isinstance(parsed, exp.Select):
+        # Reject actual DML/DDL statement types; allow Select and With (CTE+SELECT)
+        if isinstance(parsed, (exp.Insert, exp.Update, exp.Delete, exp.Drop, exp.Create, exp.Command)):
             raise ValueError("Разрешены только SELECT-запросы")
         cte_names = {cte.alias.lower() for cte in parsed.find_all(exp.CTE)}
         tables = {t.name.lower() for t in parsed.find_all(exp.Table)} - cte_names
         bad = tables - allowed
         if bad:
             raise ValueError(f"Таблица не разрешена: {bad}")
-        if not parsed.args.get("limit"):
-            parsed = parsed.limit(1000)
-        return parsed.sql(dialect="sqlite")
+        # Try to regenerate SQL via sqlglot; fall back to original if it fails
+        try:
+            if isinstance(parsed, exp.Select) and not parsed.args.get("limit"):
+                return parsed.limit(1000).sql(dialect="sqlite")
+            return parsed.sql(dialect="sqlite")
+        except Exception:
+            return _regex_validate(sql)
     except ValueError:
         raise
-    except Exception as e:
-        raise ValueError(f"Ошибка SQL: {str(e)}")
+    except Exception:
+        # sqlglot can't parse some valid SQLite syntax — use regex fallback
+        return _regex_validate(sql)
 
 
 # ── DB helpers ────────────────────────────────────────────────────
@@ -896,20 +919,12 @@ async def health():
         "reports_db": Path(reports_store.DB_PATH).exists(),
     }
 
-# Добавить в main.py после существующих эндпоинтов inbox:
-
 @app.delete("/inbox/{delivery_id}")
 async def delete_inbox_item(delivery_id: int):
     """Delete a single inbox delivery."""
-    con = _get_conn()
-    try:
-        cur = con.execute("DELETE FROM deliveries WHERE id = ?", (delivery_id,))
-        if cur.rowcount == 0:
-            raise HTTPException(404, "Delivery not found")
-        con.commit()
-        return {"ok": True}
-    finally:
-        con.close()
+    if not reports_store.delete_delivery(delivery_id):
+        raise HTTPException(404, "Delivery not found")
+    return {"ok": True}
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

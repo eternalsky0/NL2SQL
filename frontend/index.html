@@ -190,11 +190,11 @@
     .cat-tab:hover { border-color: #bbb; color: #333; }
     .cat-tab.active { background: #1e1e1e; color: #fff; border-color: #1e1e1e; }
 
-    .prompt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 28px 40px; align-items: start; }
-    .prompt-card { background: #fff; border: 1px solid var(--border-color); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 0; transition: 0.2s; cursor: default; }
+    .prompt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 28px 40px; align-items: stretch; }
+    .prompt-card { background: #fff; border: 1px solid var(--border-color); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 0; transition: 0.2s; cursor: default; height: 100%; box-sizing: border-box; }
     .prompt-card:hover { border-color: #ccc; box-shadow: 0 6px 24px rgba(0,0,0,0.06); transform: translateY(-1px); }
     .prompt-card-cat { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
-    .prompt-card-title { font-size: 15px; font-weight: 700; line-height: 1.4; color: #1e1e1e; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .prompt-card-title { font-size: 15px; font-weight: 700; line-height: 1.4; color: #1e1e1e; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1; }
     .prompt-card-author { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
     .prompt-author-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .prompt-author-name { font-size: 12px; color: var(--text-muted); font-weight: 500; }
@@ -212,11 +212,11 @@
     .cat-pill.selected { color: #fff; border-color: transparent; }
 
     /* ARCHIVE / AUTOMATION views */
-    .archive-grid { padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; background: var(--bg-main); height: 100%; overflow-y: auto; align-items: start; }
-    .archive-card { background: #fff; padding: 24px; border-radius: 20px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; }
-    .archive-card:hover { border-color: var(--brand-green); transform: translateY(-2px); }
-    .archive-card h4 { margin: 0 0 8px; font-size: 14px; }
-    .archive-card p { margin: 0; font-size: 12px; color: var(--text-muted); }
+    .archive-grid { padding: 32px 40px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-main); height: 100%; overflow-y: auto; }
+    .archive-card { background: #fff; padding: 16px 24px; border-radius: 14px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .archive-card:hover { border-color: var(--brand-green); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+    .archive-card h4 { margin: 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+    .archive-card p { margin: 0; font-size: 12px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 
     /* TABLE */
     .table-holder { overflow-x: auto; margin-top: 20px; }

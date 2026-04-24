@@ -421,6 +421,15 @@ def mark_delivery_read(delivery_id: int) -> bool:
         con.close()
 
 
+def delete_delivery(delivery_id: int) -> bool:
+    con = _connect()
+    try:
+        cur = con.execute("DELETE FROM deliveries WHERE id = ?", (delivery_id,))
+        return cur.rowcount > 0
+    finally:
+        con.close()
+
+
 def count_unread_deliveries() -> int:
     con = _connect()
     try:

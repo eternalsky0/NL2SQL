@@ -568,11 +568,11 @@ function ReportForm({ report, onClose, onSaved, toast }) {
     try {
       const r = await fetch(`${API}/query`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: question.trim(), username: "system" }) });
       const d = await r.json();
-      if (d.error || !r.ok) { toast(d.message || d.detail || "Ошибка генерации", "err"); }
+      if (d.error || !r.ok) { toast(d.content || d.detail || d.message || "Ошибка генерации", "err"); }
       else {
-        const sqlVal = d.sql || d.data?.sql || "";
+        const sqlVal = d.data?.sql || "";
         setSql(sqlVal);
-        if (d.chart_type) setChartType(d.chart_type);
+        if (d.data?.chart_type) setChartType(d.data.chart_type);
         toast("SQL сгенерирован — проверьте перед сохранением");
       }
     } catch (e) { toast(e.message, "err"); }
