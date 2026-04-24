@@ -1329,13 +1329,15 @@ function App() {
             <div className="input-dock">
               <div className="input-wrap">
                 {/* Ghost layer */}
-                <div className="ghost-layer" aria-hidden="true">
-                  <span className="ghost-typed">{input}</span>
-                  <span className="ghost-suffix">{ghost}</span>
-                </div>
+                {ghost && (
+                  <div className="ghost-layer" aria-hidden="true">
+                    <span className="ghost-typed">{input}</span>
+                    <span className="ghost-suffix">{ghost}</span>
+                  </div>
+                )}
                 <input
                   className="input-field"
-                  placeholder="Спроси Drivee…"
+                  placeholder={ghost ? "" : "Спроси Drivee…"}
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
