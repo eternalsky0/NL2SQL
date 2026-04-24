@@ -245,7 +245,8 @@ def validate_and_fix_sql(sql: str, role: str = "user") -> str:
         parsed = sqlglot.parse_one(sql, dialect="sqlite")
         if not isinstance(parsed, exp.Select):
             raise ValueError("Разрешены только SELECT-запросы")
-        tables = {t.name.lower() for t in parsed.find_all(exp.Table)}
+        cte_names = {cte.alias.lower() for cte in parsed.find_all(exp.CTE)}
+        tables = {t.name.lower() for t in parsed.find_all(exp.Table)} - cte_names
         bad = tables - allowed
         if bad:
             raise ValueError(f"Таблица не разрешена: {bad}")
