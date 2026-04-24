@@ -66,14 +66,17 @@
     .notif-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 420px; max-height: 480px; overflow-y: auto; background: #fff; border: 1px solid var(--border-color); border-radius: 20px; box-shadow: 0 16px 48px rgba(0,0,0,0.12); z-index: 500; animation: slideDown 0.15s ease; }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     .notif-dropdown-header { padding: 16px 20px 12px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-    .notif-item { padding: 14px 20px; border-bottom: 1px solid #f5f5f7; cursor: pointer; transition: 0.1s; display: flex; align-items: flex-start; gap: 12px; }
+    .notif-item { padding: 14px 20px; border-bottom: 1px solid #f5f5f7; cursor: pointer; transition: 0.1s; display: flex; align-items: flex-start; gap: 12px; position: relative; }
     .notif-item:hover { background: #fafafa; }
+    .notif-item:hover .notif-delete { opacity: 1; }
     .notif-item.unread { background: #f9fef0; }
     .notif-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
     .notif-content { flex: 1; min-width: 0; }
     .notif-subject { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
     .notif-preview { font-size: 11.5px; color: #888; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .notif-time { font-size: 11px; color: #bbb; flex-shrink: 0; font-family: monospace; }
+    .notif-delete { opacity: 0; transition: opacity 0.15s; background: none; border: none; cursor: pointer; color: #ccc; padding: 4px; border-radius: 6px; flex-shrink: 0; font-size: 14px; line-height: 1; }
+    .notif-delete:hover { color: #ef4444; background: #fef2f2; }
     .notif-empty { padding: 32px 20px; text-align: center; color: #ccc; font-size: 13px; }
     
     .content { flex: 1; overflow-y: auto; padding: 32px 40px; }
@@ -86,6 +89,8 @@
     .btn-ghost:hover:not(:disabled) { color: var(--text-main); border-color: #ccc; background: #f9f9f9; transform: translateY(-1px); }
     .btn-danger { background: #fff5f5; color: #dc2626; border: 1px solid #fecaca; }
     .btn-danger:hover:not(:disabled) { background: #fee2e2; transform: translateY(-1px); }
+    .btn-danger-ghost { background: transparent; color: #dc2626; border: 1px solid transparent; }
+    .btn-danger-ghost:hover:not(:disabled) { background: #fef2f2; border-color: #fecaca; transform: translateY(-1px); }
     .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 10px; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
 
@@ -711,33 +716,37 @@ function RunRow({ run, report, onView }) {
 }
 
 // ── Notification dropdown ─────────────────────────────────────────
-function NotificationDropdown({ type, open, onClose, items, onMarkRead, onOpenAlerts }) {
+function NotificationDropdown({ type, open, onClose, items, onMarkRead, onDelete, onClearAll, onOpenAlerts }) {
   if (!open) return null;
   
   const isInbox = type === 'inbox';
   const title = isInbox ? 'Входящие' : 'Алерты';
-  const unreadItems = isInbox ? items.filter(i => !i.read_at) : items.filter(a => !a.enabled ? false : true);
+  const unreadItems = isInbox ? items.filter(i => !i.read_at) : [];
   
   return (
     <div className="notif-dropdown" onClick={e => e.stopPropagation()}>
       <div className="notif-dropdown-header">
         <span>{title}</span>
-        {isInbox && unreadItems.length > 0 && (
-          <button 
-            className="btn btn-ghost btn-sm"
-            onClick={() => unreadItems.forEach(i => onMarkRead(i.id))}
-          >
-            Прочитать все
-          </button>
-        )}
-        {!isInbox && (
-          <button 
-            className="btn btn-ghost btn-sm"
-            onClick={() => { onClose(); onOpenAlerts(); }}
-          >
-            Управление
-          </button>
-        )}
+        <div style={{display:'flex', gap: 6}}>
+          {isInbox && items.length > 0 && (
+            <>
+              {unreadItems.length > 0 && (
+                <button className="btn btn-ghost btn-sm" onClick={() => onMarkRead(null, true)}>
+                  Прочитать все
+                </button>
+              )}
+              <button className="btn btn-danger-ghost btn-sm" onClick={onClearAll}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Очистить
+              </button>
+            </>
+          )}
+          {!isInbox && (
+            <button className="btn btn-ghost btn-sm" onClick={() => { onClose(); onOpenAlerts(); }}>
+              Управление
+            </button>
+          )}
+        </div>
       </div>
       {items.length === 0 ? (
         <div className="notif-empty">
@@ -760,8 +769,22 @@ function NotificationDropdown({ type, open, onClose, items, onMarkRead, onOpenAl
               <div className="notif-preview">{item.preview || (item.operator && `значение ${item.operator} ${item.threshold}`) || '—'}</div>
             </div>
             <div className="notif-time">{fmtDate(item.created_at || item.last_checked_at)}</div>
+            {isInbox && (
+              <button 
+                className="notif-delete"
+                onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                title="Удалить"
+              >
+                ✕
+              </button>
+            )}
           </div>
         ))
+      )}
+      {items.length > 8 && (
+        <div style={{textAlign:'center', padding:'12px', fontSize:12, color:'#aaa'}}>
+          Показаны последние 8 из {items.length}
+        </div>
       )}
     </div>
   );
@@ -1228,7 +1251,7 @@ function ReportsTab({ toast }) {
 }
 
 // ── Top bar ───────────────────────────────────────────────────────
-function TopBar({ unreadInbox, unreadAlerts, inboxItems, alertItems, onMarkRead, onOpenAlerts }) {
+function TopBar({ unreadInbox, unreadAlerts, inboxItems, alertItems, onMarkRead, onDeleteInbox, onClearInbox, onOpenAlerts }) {
   const [openDropdown, setOpenDropdown] = useState(null); // 'inbox' | 'alerts' | null
   
   useEffect(() => {
@@ -1257,6 +1280,8 @@ function TopBar({ unreadInbox, unreadAlerts, inboxItems, alertItems, onMarkRead,
           onClose={() => setOpenDropdown(null)} 
           items={inboxItems} 
           onMarkRead={onMarkRead}
+          onDelete={onDeleteInbox}
+          onClearAll={onClearInbox}
           onOpenAlerts={onOpenAlerts}
         />
       </div>
@@ -1351,9 +1376,28 @@ function App() {
     window.location.href = 'index.html';
   };
 
-  const markInboxRead = async (id) => {
-    await fetch(`${API}/inbox/${id}/read`, { method: "POST" });
-    setInboxItems(i => i.map(x => x.id === id ? {...x, read_at: new Date().toISOString()} : x));
+  const markInboxRead = async (id, all = false) => {
+    if (all) {
+      const unread = inboxItems.filter(i => !i.read_at);
+      await Promise.all(unread.map(i => fetch(`${API}/inbox/${i.id}/read`, { method: "POST" })));
+      setInboxItems(prev => prev.map(i => i.read_at ? i : {...i, read_at: new Date().toISOString()}));
+    } else if (id) {
+      await fetch(`${API}/inbox/${id}/read`, { method: "POST" });
+      setInboxItems(i => i.map(x => x.id === id ? {...x, read_at: new Date().toISOString()} : x));
+    }
+  };
+
+  const deleteInboxItem = async (id) => {
+    await fetch(`${API}/inbox/${id}`, { method: "DELETE" });
+    setInboxItems(prev => prev.filter(i => i.id !== id));
+    toast('Уведомление удалено');
+  };
+
+  const clearInbox = async () => {
+    if (!confirm('Удалить все входящие уведомления?')) return;
+    await Promise.all(inboxItems.map(i => fetch(`${API}/inbox/${i.id}`, { method: "DELETE" })));
+    setInboxItems([]);
+    toast('Входящие очищены');
   };
 
   const deleteChat = async (chatId, e) => {
@@ -1430,6 +1474,8 @@ function App() {
           inboxItems={inboxItems}
           alertItems={alertItems}
           onMarkRead={markInboxRead}
+          onDeleteInbox={deleteInboxItem}
+          onClearInbox={clearInbox}
           onOpenAlerts={() => setShowAlertsModal(true)}
         />
         <div className="content">
