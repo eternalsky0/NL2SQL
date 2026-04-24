@@ -28,16 +28,30 @@
 
     /* ── Sidebar ── */
     .sidebar { width: var(--sidebar-width); flex-shrink: 0; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 24px 12px; }
-    .logo { padding: 0 12px; margin-bottom: 32px; }
+    .logo { padding: 0 12px; margin-bottom: 32px; cursor: pointer; }
     .logo img { height: 22px; display: block; }
     .btn-new-chat { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; background: var(--brand-green); border-radius: 16px; cursor: pointer; font-weight: 700; font-size: 14px; margin-bottom: 32px; transition: 0.2s; border: none; width: 100%; text-decoration: none; color: #000; }
     .btn-new-chat:hover { background: var(--brand-green-hover); transform: translateY(-1px); }
-    .nav-menu { display: flex; flex-direction: column; gap: 4px; }
+    .nav-menu { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
     .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 10px; cursor: pointer; color: var(--text-main); font-weight: 500; transition: 0.2s; font-size: 14px; text-decoration: none; }
     .nav-item:hover { background: #f5f5f7; }
     .nav-item.active { background: var(--brand-green); color: #000; }
     .nav-badge { margin-left: auto; background: var(--brand-green); color: #000; border-radius: 20px; font-size: 10px; font-weight: 800; padding: 1px 7px; }
     .icon-svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
+
+    /* Chat history in sidebar */
+    .history-label { font-size: 11px; font-weight: 800; color: #ccc; padding: 0 16px 12px; letter-spacing: 1px; text-transform: uppercase; }
+    .chat-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+    .chat-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 12px; cursor: pointer; font-size: 13.5px; color: #555; transition: 0.2s; }
+    .chat-item:hover { background: #f5f5f7; }
+    .chat-item.active { background: #f0f0f2; color: #000; font-weight: 600; }
+    .chat-item-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
+    .btn-del-chat { opacity: 0; transition: 0.2s; padding: 4px; border-radius: 6px; background: none; border: none; cursor: pointer; color: inherit; }
+    .chat-item:hover .btn-del-chat { opacity: 0.3; }
+    .btn-del-chat:hover { opacity: 1 !important; color: #ef4444; }
+    .user-profile { margin-top: auto; padding: 16px 12px 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+    .user-name { font-size: 13px; font-weight: 700; }
+    .btn-logout { cursor: pointer; opacity: 0.4; font-size: 12px; font-weight: 600; }
 
     /* ── Main ── */
     .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
@@ -103,6 +117,11 @@ const fmtNum = (v) => {
   return String(v);
 };
 const fmtDate = (d) => d ? new Date(d).toLocaleString('ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+
+// ── Icons ────────────────────────────────────────────────────────
+const Icons = {
+  Trash: () => <svg className="icon-svg" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+};
 
 // ── Mini chart ────────────────────────────────────────────────────
 function MiniChart({ columns, rows, type }) {
@@ -272,11 +291,26 @@ function App() {
   const [dragId, setDragId]       = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
   const [unread, setUnread]       = useState(0);
+  const [chats, setChats]         = useState([]);
+  const [user, setUser]           = useState(() => {
+    try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
+  });
 
   useEffect(() => {
     fetch(`${API}/reports`).then(r => r.json()).then(setReports).catch(() => {});
     fetch(`${API}/inbox/unread_count`).then(r => r.json()).then(d => setUnread(d.count || 0)).catch(() => {});
-  }, []);
+    if (user) {
+      fetch(`${API}/chats/${user.username}`).then(r => r.json()).then(setChats).catch(() => {});
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const t = setInterval(() => {
+      fetch(`${API}/inbox/unread_count`).then(r => r.json()).then(d => setUnread(d.count || 0)).catch(() => {});
+    }, 15000);
+    return () => clearInterval(t);
+  }, [user]);
 
   const save = (ids) => {
     setWidgetIds(ids);
@@ -288,6 +322,17 @@ function App() {
   };
 
   const removeWidget = (id) => save(widgetIds.filter(x => x !== id));
+
+  const deleteChat = async (chatId, e) => {
+    e.stopPropagation();
+    await fetch(`${API}/chats/${chatId}`, { method: "DELETE" });
+    setChats(cs => cs.filter(c => c.id !== chatId));
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = 'index.html';
+  };
 
   // Drag-and-drop reorder
   const onDragStart = (id) => setDragId(id);
@@ -337,6 +382,31 @@ function App() {
             <svg className="icon-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m14 10v-2a4 4 0 0 0-3-3.87"/></svg>
             Сообщество
           </a>
+        </div>
+
+        {/* Chat history */}
+        <div className="history-label">Недавние</div>
+        <div className="chat-list">
+          {chats.map(c => (
+            <div
+              key={c.id}
+              className="chat-item"
+              onClick={() => window.location.href = 'index.html'}
+            >
+              <div className="chat-item-title">{c.title}</div>
+              <button
+                className="btn-del-chat"
+                onClick={(e) => deleteChat(c.id, e)}
+              >
+                <Icons.Trash />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="user-profile">
+          <div className="user-name">{user?.username || 'Гость'}</div>
+          <div className="btn-logout" onClick={handleLogout}>Выйти</div>
         </div>
       </nav>
 
