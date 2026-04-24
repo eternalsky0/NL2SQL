@@ -10,7 +10,7 @@
 
 Сценарий 1. Сравнительный анализ - https://drive.google.com/file/d/1a2iQ1PfuFKDBonfpvSrT0DA0FNDNIAHB/view?usp=drive_link
 
-Сценарий 2. Сравнительный анализ -[https://drive.google.com/file/d/1l5Ul4j-vUirqDDzQoPrzGey1JQdp1S8e/view?usp=drive_link
+Сценарий 2. Сравнительный анализ -https://drive.google.com/file/d/1l5Ul4j-vUirqDDzQoPrzGey1JQdp1S8e/view?usp=drive_link
 
 Сценарий 3. Сравнительный анализ - https://drive.google.com/file/d/1-sFleJGR5urpJWIOd6E2BKWxYIR4146_/view?usp=drive_link
 
