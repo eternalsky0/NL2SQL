@@ -822,7 +822,20 @@ async def health():
         "reports_db": Path(reports_store.DB_PATH).exists(),
     }
 
+# Добавить в main.py после существующих эндпоинтов inbox:
 
+@app.delete("/inbox/{delivery_id}")
+async def delete_inbox_item(delivery_id: int):
+    """Delete a single inbox delivery."""
+    con = _get_conn()
+    try:
+        cur = con.execute("DELETE FROM deliveries WHERE id = ?", (delivery_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(404, "Delivery not found")
+        con.commit()
+        return {"ok": True}
+    finally:
+        con.close()
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
