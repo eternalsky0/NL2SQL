@@ -27,9 +27,9 @@ tables:
       cancel_before_accept_local:  "TEXT"
       distance_in_meters:          "INTEGER — дистанция в метрах"
       duration_in_seconds:         "INTEGER — длительность в секундах"
-      price_order_local:           "REAL — цена заказа"
-      price_tender_local:          "REAL — цена тендера"
-      price_start_local:           "REAL — стартовая цена"
+      price_order_local:           "REAL — цена заказа в рублях (₽)"
+      price_tender_local:          "REAL — цена тендера в рублях (₽)"
+      price_start_local:           "REAL — стартовая цена в рублях (₽)"
 
 metrics:
   total_orders:
@@ -48,12 +48,12 @@ metrics:
     sql: "COUNT(DISTINCT CASE WHEN status_order = 'cancel' THEN order_id END)"
 
   revenue:
-    canonical: "выручка"
+    canonical: "выручка (₽)"
     synonyms: ["доход", "оборот", "сумма", "gmv"]
     sql: "SUM(CASE WHEN status_tender = 'done' THEN price_order_local ELSE 0 END)"
 
   avg_check:
-    canonical: "средний чек"
+    canonical: "средний чек (₽)"
     synonyms: ["средняя стоимость заказа"]
     sql: "AVG(CASE WHEN status_tender = 'done' THEN price_order_local END)"
 
