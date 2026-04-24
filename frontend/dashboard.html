@@ -98,6 +98,26 @@
     .dash-empty h3 { font-size: 18px; color: #888; }
     .dash-empty p { font-size: 13px; max-width: 320px; }
 
+    /* ── Widget modal ── */
+    .wm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; animation: wmIn 0.15s ease; }
+    @keyframes wmIn { from { opacity: 0; } to { opacity: 1; } }
+    .wm-box { background: #fff; border-radius: 28px; width: 100%; max-width: 860px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.18); animation: wmUp 0.18s ease; }
+    @keyframes wmUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .wm-head { padding: 24px 28px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: flex-start; gap: 16px; flex-shrink: 0; }
+    .wm-head-text { flex: 1; min-width: 0; }
+    .wm-head-text h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .wm-head-text p { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wm-body { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+    .wm-chart { border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; height: 280px; position: relative; }
+    .wm-tbl-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 14px; background: #fff; }
+    .wm-tbl-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .wm-tbl-wrap th { padding: 10px 16px; text-align: left; background: var(--bg-main); color: #aaa; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+    .wm-tbl-wrap td { padding: 9px 16px; border-bottom: 1px solid var(--bg-main); color: #555; font-size: 13px; white-space: nowrap; }
+    .wm-tbl-wrap tr:last-child td { border-bottom: none; }
+    .wm-tbl-wrap tr:hover td { background: #fafafa; }
+    .widget-body.clickable { cursor: pointer; }
+    .widget-body.clickable:hover { background: #fafcf5; }
+
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
   </style>
@@ -158,11 +178,102 @@ function MiniChart({ columns, rows, type }) {
   return <canvas ref={ref} />;
 }
 
+// ── Full chart (для модалки) ──────────────────────────────────────
+function FullChart({ columns, rows, type }) {
+  const ref = useRef(null);
+  const inst = useRef(null);
+  useEffect(() => {
+    if (!ref.current || !rows?.length) return;
+    if (inst.current) inst.current.destroy();
+    const isPie = type === 'pie', isLine = type === 'line';
+    inst.current = new Chart(ref.current, {
+      type: isPie ? 'pie' : isLine ? 'line' : 'bar',
+      data: {
+        labels: rows.slice(0, 20).map(r => String(r[0])),
+        datasets: [{
+          label: columns[1] || '',
+          data: rows.slice(0, 20).map(r => Number(r[1]) || 0),
+          backgroundColor: isPie ? PIE_COLORS : '#1e1e1e',
+          hoverBackgroundColor: isPie ? PIE_COLORS : '#96ea28',
+          borderColor: isLine ? '#96ea28' : 'transparent',
+          borderWidth: isLine ? 2.5 : 0,
+          fill: isLine ? { target: 'origin', above: 'rgba(150,234,40,0.07)' } : false,
+          tension: 0.4, pointRadius: isLine ? 3 : 0,
+          borderRadius: (!isPie && !isLine) ? 8 : 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: isPie, labels: { color: '#888', font: { size: 11 } } } },
+        scales: isPie ? {} : {
+          y: { grid: { color: '#f0f0f0' }, ticks: { color: '#aaa', font: { size: 11 } } },
+          x: { grid: { display: false }, ticks: { color: '#aaa', font: { size: 11 }, maxRotation: 30 } }
+        }
+      }
+    });
+    return () => { if (inst.current) inst.current.destroy(); };
+  }, [rows, type]);
+  return <canvas ref={ref} />;
+}
+
+// ── Widget modal ──────────────────────────────────────────────────
+function WidgetModal({ report, data, runDate, onClose, onRun }) {
+  const chartType = report.chart_type || 'bar';
+  const isKpi = data.columns.length === 1 && data.rows.length === 1;
+  const hasChart = !isKpi && data.columns.length >= 2 && chartType !== 'table' && !isNaN(Number(data.rows[0]?.[1]));
+
+  return (
+    <div className="wm-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="wm-box">
+        <div className="wm-head">
+          <div className="wm-head-text">
+            <h2>{report.name}</h2>
+            <p>{report.question}</p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={onRun} style={{ background: 'var(--brand-green)', border: 'none', borderRadius: 10, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>↻ Обновить</button>
+            <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: 10, padding: '7px 14px', fontSize: 13, cursor: 'pointer', color: '#888' }}>✕</button>
+          </div>
+        </div>
+        <div className="wm-body">
+          {isKpi && (
+            <div style={{ textAlign: 'center', padding: '32px 0' }}>
+              <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 12 }}>{data.columns[0]}</div>
+              <div style={{ fontSize: 64, fontWeight: 800, letterSpacing: -3, lineHeight: 1 }}>{fmtNum(data.rows[0][0])}</div>
+            </div>
+          )}
+          {hasChart && (
+            <div className="wm-chart">
+              <FullChart columns={data.columns} rows={data.rows} type={chartType} />
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#aaa', marginBottom: 8 }}>
+              Данные · {data.rows.length} строк{runDate ? ` · ${fmtDate(runDate)}` : ''}
+            </div>
+            <div className="wm-tbl-wrap">
+              <table>
+                <thead><tr>{data.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+                <tbody>
+                  {data.rows.map((row, i) => (
+                    <tr key={i}>{row.map((cell, j) => <td key={j}>{fmtNum(cell)}</td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Widget ────────────────────────────────────────────────────────
 function Widget({ report, onRemove, dragHandlers }) {
   const [state, setState] = useState('loading'); // loading | ok | empty | error
   const [data, setData]   = useState(null);
   const [runDate, setRunDate] = useState(null);
+  const [modal, setModal] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/reports/${report.id}/last_result`)
@@ -179,7 +290,8 @@ function Widget({ report, onRemove, dragHandlers }) {
       .catch(() => setState('error'));
   }, [report.id]);
 
-  const run = async () => {
+  const run = async (e) => {
+    e?.stopPropagation();
     setState('loading');
     try {
       const r = await fetch(`${API}/reports/${report.id}/run`, { method: 'POST' });
@@ -195,57 +307,75 @@ function Widget({ report, onRemove, dragHandlers }) {
   const chartType = report.chart_type || 'bar';
   const isKpi = data && data.columns.length === 1 && data.rows.length === 1;
   const hasChart = data && !isKpi && data.columns.length >= 2 && chartType !== 'table' && !isNaN(Number(data.rows[0]?.[1]));
+  const previewRows = data?.rows?.slice(0, 5) || [];
 
   return (
-    <div className="widget" {...dragHandlers}>
-      <div className="widget-header">
-        <span className="drag-handle" title="Перетащить">⠿</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="widget-name">{report.name}</div>
+    <>
+      <div className="widget" {...dragHandlers}>
+        <div className="widget-header">
+          <span className="drag-handle" title="Перетащить">⠿</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="widget-name">{report.name}</div>
+          </div>
+          <span className="widget-chart-type">{CHART_ICONS[chartType]}</span>
+          <button onClick={e => { e.stopPropagation(); onRemove(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', fontSize: 16, lineHeight: 1, padding: '0 0 0 8px' }} title="Убрать">✕</button>
         </div>
-        <span className="widget-chart-type">{CHART_ICONS[chartType]}</span>
-        <button onClick={onRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', fontSize: 16, lineHeight: 1, padding: '0 0 0 8px' }} title="Убрать">✕</button>
-      </div>
 
-      <div className="widget-body">
-        {state === 'loading' && <div className="widget-loading"><span className="spin" /> Загрузка…</div>}
-        {state === 'error'   && <div className="widget-empty">Ошибка загрузки</div>}
-        {state === 'empty'   && (
-          <div className="widget-empty">
-            Данных нет
-            <div style={{ marginTop: 12 }}>
-              <button onClick={run} style={{ background: 'var(--brand-green)', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>▶ Запустить</button>
+        <div className={`widget-body${state === 'ok' ? ' clickable' : ''}`} onClick={() => state === 'ok' && setModal(true)}>
+          {state === 'loading' && <div className="widget-loading"><span className="spin" /> Загрузка…</div>}
+          {state === 'error'   && <div className="widget-empty">Ошибка загрузки</div>}
+          {state === 'empty'   && (
+            <div className="widget-empty">
+              Данных нет
+              <div style={{ marginTop: 12 }}>
+                <button onClick={run} style={{ background: 'var(--brand-green)', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>▶ Запустить</button>
+              </div>
             </div>
+          )}
+          {state === 'ok' && isKpi && (
+            <div className="widget-kpi">
+              <div className="widget-kpi-label">{data.columns[0].replace(/_/g, ' ')}</div>
+              <div className="widget-kpi-value">{fmtNum(data.rows[0][0])}</div>
+            </div>
+          )}
+          {state === 'ok' && hasChart && (
+            <div style={{ height: 160 }}>
+              <MiniChart columns={data.columns} rows={data.rows} type={chartType} />
+            </div>
+          )}
+          {state === 'ok' && !isKpi && (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead><tr>{data.columns.map((c, i) => <th key={i} style={{ padding: '4px 8px', textAlign: 'left', color: '#aaa', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', borderBottom: '1px solid #f0f0f0' }}>{c}</th>)}</tr></thead>
+              <tbody>{previewRows.map((row, i) => (
+                <tr key={i}>{row.map((cell, j) => <td key={j} style={{ padding: '5px 8px', borderBottom: '1px solid #fafafa', color: '#555' }}>{fmtNum(cell)}</td>)}</tr>
+              ))}</tbody>
+            </table>
+          )}
+          {state === 'ok' && !isKpi && data.rows.length > 5 && (
+            <div style={{ textAlign: 'center', padding: '8px 0 2px', fontSize: 11, color: '#bbb' }}>
+              + ещё {data.rows.length - 5} строк — нажмите для просмотра
+            </div>
+          )}
+        </div>
+
+        {state === 'ok' && (
+          <div className="widget-footer">
+            <span className="widget-date">{runDate ? fmtDate(runDate) : ''}</span>
+            <button onClick={run} style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer', color: '#888' }}>↻ Обновить</button>
           </div>
-        )}
-        {state === 'ok' && isKpi && (
-          <div className="widget-kpi">
-            <div className="widget-kpi-label">{data.columns[0].replace(/_/g, ' ')}</div>
-            <div className="widget-kpi-value">{fmtNum(data.rows[0][0])}</div>
-          </div>
-        )}
-        {state === 'ok' && hasChart && (
-          <div style={{ height: 160 }}>
-            <MiniChart columns={data.columns} rows={data.rows} type={chartType} />
-          </div>
-        )}
-        {state === 'ok' && !isKpi && !hasChart && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-            <thead><tr>{data.columns.map((c, i) => <th key={i} style={{ padding: '4px 8px', textAlign: 'left', color: '#aaa', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', borderBottom: '1px solid #f0f0f0' }}>{c}</th>)}</tr></thead>
-            <tbody>{data.rows.slice(0, 5).map((row, i) => (
-              <tr key={i}>{row.map((cell, j) => <td key={j} style={{ padding: '5px 8px', borderBottom: '1px solid #fafafa', color: '#555' }}>{fmtNum(cell)}</td>)}</tr>
-            ))}</tbody>
-          </table>
         )}
       </div>
 
-      {state === 'ok' && (
-        <div className="widget-footer">
-          <span className="widget-date">{runDate ? fmtDate(runDate) : ''}</span>
-          <button onClick={run} style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer', color: '#888' }}>↻ Обновить</button>
-        </div>
+      {modal && data && (
+        <WidgetModal
+          report={report}
+          data={data}
+          runDate={runDate}
+          onClose={() => setModal(false)}
+          onRun={async () => { await run(); setModal(false); }}
+        />
       )}
-    </div>
+    </>
   );
 }
 
