@@ -1208,8 +1208,8 @@ function App() {
   const handleKeyDown = (e) => {
     if (e.key === "Tab" && ghost) {
       e.preventDefault();
-      const separator = input.endsWith(" ") ? "" : " ";
-      setInput(input + separator + ghost);
+      const needSpace = input.endsWith(" ") ? false : ghost.startsWith(" ");
+      setInput(input + (needSpace ? ghost : ghost.trimStart()));
       setGhost("");
     } else if (e.key === "Enter") {
       e.preventDefault();
