@@ -514,6 +514,11 @@ async def suggest_ghost(req: GhostReq):
         return StreamingResponse(empty(), media_type="text/event-stream")
 
     async def iter_tokens():
+        # Последнее слово ввода как доп. стоп-токен — модель не будет его повторять
+        last_word = req.prefix.strip().split()[-1] if req.prefix.strip() else ""
+        stop_seqs = ["\n", "Input:", "Output:"]
+        if last_word and len(last_word) > 2:
+            stop_seqs.append(last_word)
         try:
             response = await client.chat.completions.create(
                 model=FAST_MODEL,
@@ -524,7 +529,7 @@ async def suggest_ghost(req: GhostReq):
                 temperature=0.05,
                 max_tokens=20,
                 stream=True,
-                stop=["\n", "Input:", "Output:"],
+                stop=stop_seqs,
             )
             async for chunk in response:
                 txt = chunk.choices[0].delta.content or ""

@@ -1118,36 +1118,53 @@ function App() {
   }, [user]);
 
   // ── Ghost text ────────────────────────────────────────────────
+  const ghostAbortRef = useRef(null);
+
   useEffect(() => {
     clearTimeout(ghostTimerRef.current);
+    if (ghostAbortRef.current) { ghostAbortRef.current.abort(); ghostAbortRef.current = null; }
     if (input.length < 2) { setGhost(""); return; }
+
     ghostTimerRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      ghostAbortRef.current = controller;
       try {
         const res = await fetch(`${API}/suggest/ghost`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prefix: input })
+          body: JSON.stringify({ prefix: input }),
+          signal: controller.signal,
         });
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let txt = "";
-        while (true) {
+        outer: while (true) {
           const { value, done } = await reader.read();
           if (done) break;
           for (const line of decoder.decode(value).split("\n")) {
             if (line.startsWith("data: ")) {
               const raw = line.slice(6).trim();
-              if (raw === "[DONE]") break;
+              if (raw === "[DONE]") break outer;
               try {
                 const parsed = JSON.parse(raw);
-                if (parsed.text) { txt += parsed.text; setGhost(txt); }
+                if (parsed.text) {
+                  txt += parsed.text;
+                  // Обрываем если модель зациклилась (слово повторяется 3+ раз подряд)
+                  if (/(\S+)(\s+\1){2}/i.test(txt)) break outer;
+                  setGhost(txt.trimStart());
+                }
               } catch {}
             }
           }
         }
       } catch {}
+      ghostAbortRef.current = null;
     }, 400);
-    return () => clearTimeout(ghostTimerRef.current);
+
+    return () => {
+      clearTimeout(ghostTimerRef.current);
+      if (ghostAbortRef.current) { ghostAbortRef.current.abort(); ghostAbortRef.current = null; }
+    };
   }, [input]);
 
   const selectChat = async (id) => {
