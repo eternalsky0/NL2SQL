@@ -1118,6 +1118,17 @@ function App() {
   }, [user]);
 
   // ── Ghost text ────────────────────────────────────────────────
+  // Нормализуем пробел на границе input/ghost:
+  // гласная в начале ghost = продолжение слова (без пробела)
+  // согласная/цифра = новое слово (добавляем пробел если его нет)
+  const normalizeGhost = (inp, g) => {
+    if (!g) return '';
+    if (inp.endsWith(' ')) return g.trimStart();
+    if (g.startsWith(' ')) return g;
+    const VOWELS = 'аеёиоуыэюяАЕЁИОУЫЭЮЯaeiouAEIOU';
+    return VOWELS.includes(g[0]) ? g : ' ' + g;
+  };
+
   const ghostAbortRef = useRef(null);
 
   useEffect(() => {
@@ -1151,7 +1162,7 @@ function App() {
                   txt += parsed.text;
                   // Обрываем если модель зациклилась (слово повторяется 3+ раз подряд)
                   if (/(\S+)(\s+\1){2}/i.test(txt)) break outer;
-                  setGhost(txt.trimStart());
+                  setGhost(normalizeGhost(input, txt));
                 }
               } catch {}
             }
@@ -1225,8 +1236,7 @@ function App() {
   const handleKeyDown = (e) => {
     if (e.key === "Tab" && ghost) {
       e.preventDefault();
-      const needSpace = input.endsWith(" ") ? false : ghost.startsWith(" ");
-      setInput(input + (needSpace ? ghost : ghost.trimStart()));
+      setInput(input + ghost); // ghost уже нормализован в normalizeGhost
       setGhost("");
     } else if (e.key === "Enter") {
       e.preventDefault();
