@@ -9,7 +9,7 @@ from typing import List, Optional
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent / ".env")
+load_dotenv(Path(__file__).parent / "_env")
 
 import yaml
 import pandas as pd
@@ -675,6 +675,7 @@ async def get_run_detail(report_id: int, run_id: int):
 
 @app.get("/reports/{report_id}/last_result")
 async def get_last_result(report_id: int):
+    """Get the last successful run result for a report (used by dashboard widgets)."""
     runs = reports_store.list_runs(report_id)
     for run in runs:
         if run.get("status") == "success":
@@ -748,7 +749,7 @@ async def _check_alerts():
             report = reports_store.get_report(report_id)
             if not report:
                 continue
-            result = _run_sql(report.sql)
+            result = await _run_sql(report.sql)
             if not result.get("rows"):
                 continue
             value = result["rows"][0][0]
@@ -762,11 +763,14 @@ async def _check_alerts():
                         (now, value, now if triggered else None, alert_id))
             if triggered:
                 msg = f"Алерт «{name}»: значение {value:g} {operator} {threshold:g}"
-                reports_store.create_delivery(
+                reports_store.record_delivery(
                     report_id=report_id,
+                    run_id=None,
+                    channel="inapp",
+                    target=None,
+                    status="sent",
                     subject=f"⚠️ Алерт: {name}",
                     preview=msg,
-                    channel="inapp",
                 )
             con.commit(); con.close()
         except Exception:

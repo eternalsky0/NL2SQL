@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS report_runs (
 CREATE TABLE IF NOT EXISTS deliveries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     report_id INTEGER NOT NULL,
-    run_id INTEGER NOT NULL,
+    run_id INTEGER,
     channel TEXT NOT NULL,
     target TEXT,
     status TEXT NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS deliveries (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     read_at TIMESTAMP,
     FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE,
-    FOREIGN KEY (run_id) REFERENCES report_runs(id) ON DELETE CASCADE
+    FOREIGN KEY (run_id) REFERENCES report_runs(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_runs_report ON report_runs(report_id, started_at DESC);
@@ -93,6 +93,30 @@ def init_db() -> None:
         for col, ddl in _EXPECTED_REPORT_COLUMNS.items():
             if col not in existing:
                 con.execute(f"ALTER TABLE reports ADD COLUMN {col} {ddl}")
+        # Migration: allow run_id to be NULL in deliveries
+        try:
+            con.execute("ALTER TABLE deliveries RENAME TO deliveries_old")
+            con.executescript("""
+                CREATE TABLE deliveries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    report_id INTEGER NOT NULL,
+                    run_id INTEGER,
+                    channel TEXT NOT NULL,
+                    target TEXT,
+                    status TEXT NOT NULL,
+                    error TEXT,
+                    subject TEXT,
+                    preview TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    read_at TIMESTAMP,
+                    FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE,
+                    FOREIGN KEY (run_id) REFERENCES report_runs(id) ON DELETE SET NULL
+                );
+                INSERT INTO deliveries SELECT * FROM deliveries_old;
+                DROP TABLE deliveries_old;
+            """)
+        except Exception:
+            pass
     finally:
         con.close()
 
@@ -328,7 +352,7 @@ def get_run(run_id: int) -> dict | None:
 def record_delivery(
         *,
         report_id: int,
-        run_id: int,
+        run_id: int | None,
         channel: str,
         target: str | None,
         status: str,
@@ -354,7 +378,7 @@ def list_deliveries(limit: int = 50, unread_only: bool = False) -> list[dict]:
     try:
         q = """SELECT d.*, r.name AS report_name, r.chart_type
                FROM deliveries d LEFT JOIN reports r ON r.id = d.report_id
-               WHERE d.channel = 'in-app'"""
+               WHERE d.channel = 'inapp' OR d.channel = 'in-app'"""
         if unread_only:
             q += " AND d.read_at IS NULL"
         q += " ORDER BY d.id DESC LIMIT ?"
@@ -376,9 +400,10 @@ def get_delivery(delivery_id: int) -> dict | None:
         if not row:
             return None
         d = dict(row)
-        run = get_run(d["run_id"])
-        if run:
-            d["run"] = run
+        if d.get("run_id"):
+            run = get_run(d["run_id"])
+            if run:
+                d["run"] = run
         return d
     finally:
         con.close()
@@ -400,7 +425,30 @@ def count_unread_deliveries() -> int:
     con = _connect()
     try:
         return con.execute(
-            "SELECT COUNT(*) FROM deliveries WHERE channel='in-app' AND read_at IS NULL"
+            "SELECT COUNT(*) FROM deliveries WHERE (channel='inapp' OR channel='in-app') AND read_at IS NULL"
         ).fetchone()[0]
     finally:
         con.close()
+
+
+def create_delivery(
+        *,
+        report_id: int,
+        subject: str,
+        preview: str,
+        channel: str = "inapp",
+        target: str | None = None,
+        status: str = "sent",
+        error: str | None = None,
+) -> int:
+    """Create a delivery without a specific run_id (for alerts)."""
+    return record_delivery(
+        report_id=report_id,
+        run_id=None,
+        channel=channel,
+        target=target,
+        status=status,
+        subject=subject,
+        preview=preview,
+        error=error,
+    )
