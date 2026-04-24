@@ -309,7 +309,7 @@ function App() {
     <div className="layout">
       <nav className="sidebar">
         <div className="logo">
-          <img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" />
+          <a href="index.html"><img src="https://static.tildacdn.com/tild6333-6263-4639-b036-626634333039/logo_blgr.svg" alt="Drivee" border="0" /></a>
         </div>
         <a href="index.html" className="btn-new-chat">
           <svg className="icon-svg" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -326,9 +326,17 @@ function App() {
             {unread > 0 && <span className="nav-badge">{unread}</span>}
           </a>
           <div className="nav-item active">
-            <svg className="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <svg className="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Дашборд
           </div>
+          <a href="index.html?view=archive" className="nav-item">
+             <svg className="icon-svg" viewBox="0 0 24 24"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3m18 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8m18 0H3m7 5h4"/></svg>
+            Архив
+          </a>
+          <a href="index.html?view=community" className="nav-item">
+            <svg className="icon-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m14 10v-2a4 4 0 0 0-3-3.87"/></svg>
+            Сообщество
+          </a>
         </div>
       </nav>
 
