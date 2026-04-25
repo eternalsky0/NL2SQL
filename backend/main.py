@@ -183,10 +183,11 @@ SQL_SYSTEM = """Ты — Senior Data Analyst Drivee. Генерируй ТОЛЬ
   НЕПРАВИЛЬНО: DATE(d.max_dt, ...) или DATE(max_dt.max_dt, ...)
 
 ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА:
-1. Алиасы ВСЕГДА на русском в двойных кавычках: COUNT(*) AS "Количество"
-2. LIMIT: если пользователь указал число (топ-10, топ-5) — используй его. Иначе LIMIT 1000.
-3. Только SELECT — никаких INSERT/UPDATE/DELETE/DROP
-4. Отвечай СТРОГО JSON без markdown-блоков
+1. Алиасы столбцов ВСЕГДА на русском в двойных кавычках: COUNT(*) AS "Количество".
+2. Алиасы таблиц: СТРОГО следи за префиксами! Если используешь префикс (например, i.driver_id), убедись, что таблица объявлена как `incity i` в FROM или JOIN. Никогда не выдумывай несуществующие алиасы (например, d.driver_id, если таблицы d нет).
+3. LIMIT: если пользователь указал число (топ-10, топ-5) — используй его. Иначе LIMIT 1000.
+4. Только SELECT — никаких INSERT/UPDATE/DELETE/DROP
+5. Отвечай СТРОГО JSON без markdown-блоков
 
 ФОРМАТ ОТВЕТА:
 {{
@@ -973,6 +974,7 @@ async def delete_inbox_item(delivery_id: int):
     if not reports_store.delete_delivery(delivery_id):
         raise HTTPException(404, "Delivery not found")
     return {"ok": True}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
