@@ -137,27 +137,6 @@ python backend/test/test_security.py --url http://localhost:8000
 
 ```
 
----
-
-
-## Архитектура
-
-```
-frontend/index.html          ← React + Chart.js (один файл, без сборки)
-        │
-        │ HTTP / fetch
-        ▼
-backend/main.py              ← FastAPI: /query, /health, /reports/*
-        │
-        ├── semantic_layer.yaml   ← бизнес-словарь (метрики, синонимы)
-        ├── scheduler.py          ← APScheduler (расписания отчётов)
-        ├── reports_store.py      ← CRUD для отчётов (reports.db)
-        ├── notifications.py      ← email / in-app доставка
-        └── data/
-            ├── drivee.db         ← аналитические данные (read-only)
-            └── reports.db        ← сохранённые отчёты
-```
-
 **LLM-пайплайн (3 уровня):**
 
 | Уровень | Модель | Назначение |
