@@ -177,6 +177,10 @@ SQL_SYSTEM = """Ты — Senior Data Analyst Drivee. Генерируй ТОЛЬ
 - "За последние N дней" по pass_detail:   WHERE order_date_part >= DATE((SELECT MAX(order_date_part) FROM pass_detail), '-N days')
 - НИКОГДА не используй INTERVAL, NOW(), CURRENT_DATE, DATE('now')
 - При сравнении двух периодов используй CTE: current_week и past_week
+- Если используешь CTE для опорной даты — обращайся к столбцу напрямую (не через алиас таблицы):
+  ПРАВИЛЬНО:   WITH d AS (SELECT MAX(order_date_part) AS max_dt FROM pass_detail)
+               ... CROSS JOIN d WHERE order_date_part >= DATE(max_dt, '-30 days')
+  НЕПРАВИЛЬНО: DATE(d.max_dt, ...) или DATE(max_dt.max_dt, ...)
 
 ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА:
 1. Алиасы ВСЕГДА на русском в двойных кавычках: COUNT(*) AS "Количество"
@@ -564,6 +568,9 @@ async def query(req: QueryReq):
             raise ValueError(f"LLM не вернул JSON. Ответ: {raw_content[:300]}")
         llm_json = json.loads(m.group(0))
         sql_raw = llm_json.get("sql", "")
+
+        # Fix LLM habit of writing alias.alias (e.g. max_dt.max_dt) instead of alias
+        sql_raw = re.sub(r'\b(\w+)\.\1\b', r'\1', sql_raw)
 
         def _clean(msg: str) -> str:
             return _ANSI_RE.sub("", str(msg))
