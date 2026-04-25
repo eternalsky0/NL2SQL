@@ -106,6 +106,7 @@ python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 |---|---|
 | `frontend/index.html` | Основной чат-интерфейс |
 | `frontend/reports.html` | Управление расписаниями отчётов |
+| `frontend/dashboard.html` | Управление и настройка дашбордов |
 
 > CORS разрешён для всех origins — открывать можно прямо через `file://`.
 
