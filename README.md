@@ -2,20 +2,25 @@
 
 Естественно-языковой интерфейс к аналитической базе данных такси-сервиса. Пользователь пишет вопрос на русском («покажи отмены по городам за прошлую неделю»), система генерирует SQL, выполняет его и строит график.
 
-**Стек:** FastAPI · SQLite · OpenRouter / Ollama / Groq · Chart.js · React (без сборки)
+**Стек:** FastAPI · SQLite · OpenRouter / Ollama / Groq · Chart.js · React (без сборки, jsx в html)
 
 ---
 
 ## Реализация сценариев в рамках гранд финала МПИТ
 
-Сценарий 1. Быстрый бизнес-вопрос - https://drive.google.com/file/d/1l5Ul4j-vUirqDDzQoPrzGey1JQdp1S8e/view?usp=drive_link
+* **[Подробный разбор проекта под МПИТ](https://github.com/eternalsky0/NL2SQL/blob/main/MPIT.md)** — описание бизнес-сценариев, архитектуры безопасности, дашбордов и результатов стресс-тестирования. 
+*(Рекомендуется смотреть в веб-версии GitHub для лучшего визуального представления и работы медиафайлов).*
 
-Сценарий 2. Сравнительный анализ - https://drive.google.com/file/d/1a2iQ1PfuFKDBonfpvSrT0DA0FNDNIAHB/view?usp=drive_link
+Продукт досутпен - http://158.160.227.151:81
 
-Сценарий 3. Регулярная отчетность - https://drive.google.com/file/d/1-sFleJGR5urpJWIOd6E2BKWxYIR4146_/view?usp=drive_link
+Логин и пароль для авторизации экспертов (login:pass)
+mpit:12345
+drivee:12345
 
-Сценарий 4. Совместная работа - https://drive.google.com/file/d/1TWsszG9WtcNdKph-xoMMBoeucO_n7veu/view
-
+запасные
+a.kobenko:admin123
+d.sezyomov:admin456
+r.abramov:admin789
 ---
 
 ## Требования
@@ -49,7 +54,7 @@ pip install -r backend/requirements.txt
 
 ## Конфигурация
 
-Создайте файл `backend/.env` (в тг)
+Создайте файл `backend/.env` и скопируйте содержимое с гугл диска - https://drive.google.com/drive/u/1/folders/1djuAqMHl44cm9fMqfFGtTWgOkGMkaeq1 
 
 <summary>Ollama (локально, без интернета)</summary>
 
@@ -71,13 +76,19 @@ STRONG_MODEL=qwen2.5-coder:7b
 
 ## Инициализация базы данных
 
-Взять с ТГ
+загрузите содержимое папки data, либо ее саму с https://drive.google.com/drive/u/1/folders/1djuAqMHl44cm9fMqfFGtTWgOkGMkaeq1, поместите папку data (или создайте) в папку backend
 
 ---
 
 ## Запуск
 
 ```bash
+.venv\Scripts\activate     
+```
+
+```bash
+cd .\backend\              
+
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
@@ -124,24 +135,10 @@ GET http://localhost:8000/health
 # Тесты безопасности (guardrails, SQL-инъекции, prompt injection)
 python backend/test/test_security.py --url http://localhost:8000
 
-# Smoke-тесты планировщика отчётов (без LLM)
-python backend/test_reports_smoke.py
 ```
 
 ---
 
-## Демо-сценарий
-
-Рекомендуемый порядок для демонстрации:
-
-1. `покажи отмены по городам за прошлую неделю` — bar chart
-2. `динамика выручки за последний месяц` — line chart
-3. `топ 10 водителей по поездкам за неделю` — таблица
-4. `доля отмен по классам машин` — pie chart
-5. `а теперь только по Москве` — follow-up с памятью контекста
-6. _(wow-эффект)_ напишите `DELETE FROM orders` — сработает guardrail
-
----
 
 ## Архитектура
 
