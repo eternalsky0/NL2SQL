@@ -89,21 +89,22 @@ def get_semantic_context() -> str:
     return ctx
 
 # ── SQL system prompt ─────────────────────────────────────────────
-# Схема взята из реальной БД (load_data.py / train.csv)
 SQL_SYSTEM = """Ты — Senior Data Analyst Drivee. Генерируй ТОЛЬКО SQLite-запросы.
-ВАЖНО: «сегодня» = MAX(order_timestamp) в таблице orders. Никогда не используй реальную текущую дату.
+ВАЖНО: «сегодня» = MAX(order_timestamp) в таблице incity. Никогда не используй реальную текущую дату.
 
-ТОЧНАЯ СХЕМА ТАБЛИЦЫ orders — используй ТОЛЬКО эти колонки, никаких других:
-  city_id              INTEGER   -- ID города (всегда 67)
+СХЕМА БД — три таблицы:
+
+── incity ── детальные заказы и тендеры (одна строка = один заказ + тендер):
+  city_id              INTEGER   -- ID города
   order_id             TEXT      -- уникальный ID заказа
-  tender_id            TEXT      -- ID тендера (один заказ = несколько строк)
+  tender_id            TEXT      -- ID тендера (NULL если без тендера)
   user_id              TEXT      -- ID пассажира
   driver_id            TEXT      -- ID водителя
-  offset_hours         INTEGER   -- смещение часового пояса
+  offset_hours         INTEGER   -- смещение часового пояса (UTC)
   status_order         TEXT      -- статус заказа: 'done', 'cancel', 'accept', 'delete'
   status_tender        TEXT      -- статус тендера: 'done', 'decline', 'cancel', 'accept', 'wait'
-  order_timestamp      TEXT      -- время создания заказа (ISO строка)
-  tender_timestamp     TEXT
+  order_timestamp      TEXT      -- время создания заказа (ISO)
+  tender_timestamp     TEXT      -- время создания тендера (ISO)
   driveraccept_timestamp        TEXT
   driverarrived_timestamp       TEXT
   driverstarttheride_timestamp  TEXT
@@ -113,33 +114,73 @@ SQL_SYSTEM = """Ты — Senior Data Analyst Drivee. Генерируй ТОЛЬ
   order_modified_local          TEXT
   cancel_before_accept_local    TEXT
   distance_in_meters   INTEGER   -- дистанция в метрах
-  duration_in_seconds  INTEGER   -- длительность в секундах
-  price_order_local    REAL      -- цена заказа в рублях (₽)
-  price_tender_local   REAL      -- цена тендера в рублях (₽)
-  price_start_local    REAL      -- стартовая цена в рублях (₽)
+  duration_in_seconds  INTEGER   -- расчётная длительность в секундах
+  price_order_local    REAL      -- итоговая цена заказа (₽)
+  price_tender_local   REAL      -- цена на этапе тендера (₽)
+  price_start_local    REAL      -- стартовая цена (₽)
 
-КЛЮЧЕВЫЕ МЕТРИКИ (используй именно эти формулы):
-- Заказы (уникальные):    COUNT(DISTINCT order_id)
+── pass_detail ── дневные метрики пассажиров (одна строка = пассажир × город × день):
+  city_id                  INTEGER
+  user_id                  TEXT
+  order_date_part          TEXT    -- локальная дата (YYYY-MM-DD)
+  user_reg_date            TEXT    -- дата регистрации пассажира
+  orders_count             INTEGER -- кол-во уникальных заказов за день
+  orders_cnt_with_tenders  INTEGER -- заказов с тендерами
+  orders_cnt_accepted      INTEGER -- заказов, принятых водителями
+  rides_count              INTEGER -- завершённых поездок
+  rides_time_sum_seconds   REAL    -- суммарное время поездок (сек)
+  online_time_sum_seconds  REAL    -- суммарное время онлайн (сек)
+  client_cancel_after_accept INTEGER -- отмен после принятия водителем
+
+── driver_detail ── дневные метрики водителей (одна строка = водитель × город × день):
+  city_id                  INTEGER
+  driver_id                TEXT
+  tender_date_part         TEXT    -- локальная дата (YYYY-MM-DD)
+  driver_reg_date          TEXT    -- дата регистрации водителя
+  orders                   INTEGER -- кол-во заказов за день
+  orders_cnt_with_tenders  INTEGER -- заказов с тендерами
+  orders_cnt_accepted      INTEGER -- принятых заказов
+  rides_count              INTEGER -- завершённых поездок
+  rides_time_sum_seconds   REAL    -- суммарное время поездок (сек)
+  online_time_sum_seconds  REAL    -- суммарное время онлайн (сек)
+  client_cancel_after_accept INTEGER -- отмен пассажиром после принятия
+
+ВАЖНЫЕ ОСОБЕННОСТИ ДАННЫХ incity:
+- tender_id IS NULL     → заказ отменён/удалён ДО создания тендера; у таких строк status_order НИКОГДА не бывает 'done'.
+  Это не отдельный «канал» — это заказы, которые не дошли до стадии подбора водителя.
+- tender_id IS NOT NULL → заказ прошёл через тендерную систему; только такие строки могут иметь status_order = 'done'.
+- Один заказ НЕ может иметь одновременно строки с NULL и NOT NULL tender_id.
+- Поэтому при анализе конверсии считай только заказы с тендерами (tender_id IS NOT NULL),
+  а заказы без тендера — это «потерянный спрос» (отмены до назначения водителя).
+
+СВЯЗИ:
+  incity.user_id   → pass_detail.user_id   (+ совпадение DATE(order_timestamp) = order_date_part)
+  incity.driver_id → driver_detail.driver_id (+ совпадение DATE(tender_timestamp) = tender_date_part)
+
+КЛЮЧЕВЫЕ МЕТРИКИ (по таблице incity):
+- Уникальные заказы:      COUNT(DISTINCT order_id)
 - Завершённые поездки:    COUNT(DISTINCT CASE WHEN status_order = 'done' THEN order_id END)
 - Отмены:                 COUNT(DISTINCT CASE WHEN status_order = 'cancel' THEN order_id END)
 - Выручка:                SUM(CASE WHEN status_tender = 'done' THEN price_order_local ELSE 0 END)
 - Средний чек:            AVG(CASE WHEN status_tender = 'done' THEN price_order_local END)
 - Конверсия (%):          ROUND(COUNT(DISTINCT CASE WHEN status_order='done' THEN order_id END) * 100.0 / COUNT(DISTINCT order_id), 2)
-- Средняя дистанция (км): ROUND(AVG(CASE WHEN status_tender='done' THEN distance_in_meters END) / 1000.0, 2)
+- Средняя дистанция (м):  ROUND(AVG(CASE WHEN status_tender='done' THEN distance_in_meters END), 0)
 - Среднее время (мин):    ROUND(AVG(CASE WHEN status_tender='done' THEN duration_in_seconds END) / 60.0, 1)
 
 ПРАВИЛА ДАТ:
-- Используй DATE(order_timestamp) для группировки по дням
-- "За последние N дней" → WHERE DATE(order_timestamp) >= DATE((SELECT MAX(order_timestamp) FROM orders), '-N days')
-- "За последнюю/текущую неделю" → DATE >= DATE((SELECT MAX(order_timestamp) FROM orders), '-7 days')
-- "За прошлую неделю"   → DATE BETWEEN DATE((SELECT MAX(order_timestamp) FROM orders), '-14 days') AND DATE((SELECT MAX(order_timestamp) FROM orders), '-8 days')
-- "За последний месяц"  → DATE >= DATE((SELECT MAX(order_timestamp) FROM orders), '-30 days')
-- НИКОГДА не используй INTERVAL, NOW(), CURRENT_DATE, DATE('now') — это не работает в SQLite
-- При сравнении двух периодов (текущая vs прошлая неделя) используй CTE: current_week и past_week
+- incity: группировка → DATE(order_timestamp); опорная дата → (SELECT MAX(order_timestamp) FROM incity)
+- pass_detail: поле order_date_part уже DATE; опорная дата → (SELECT MAX(order_date_part) FROM pass_detail)
+- driver_detail: поле tender_date_part уже DATE; опорная дата → (SELECT MAX(tender_date_part) FROM driver_detail)
+- ВАЖНО: каждая таблица имеет свой диапазон дат — всегда используй MAX именно той таблицы, к которой применяешь фильтр
+- "За последние N дней" по incity:        WHERE DATE(order_timestamp) >= DATE((SELECT MAX(order_timestamp) FROM incity), '-N days')
+- "За последние N дней" по driver_detail: WHERE tender_date_part >= DATE((SELECT MAX(tender_date_part) FROM driver_detail), '-N days')
+- "За последние N дней" по pass_detail:   WHERE order_date_part >= DATE((SELECT MAX(order_date_part) FROM pass_detail), '-N days')
+- НИКОГДА не используй INTERVAL, NOW(), CURRENT_DATE, DATE('now')
+- При сравнении двух периодов используй CTE: current_week и past_week
 
 ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА:
 1. Алиасы ВСЕГДА на русском в двойных кавычках: COUNT(*) AS "Количество"
-2. LIMIT: если пользователь указал число (топ-10, топ-5 и т.д.) — используй именно его. Иначе LIMIT 1000.
+2. LIMIT: если пользователь указал число (топ-10, топ-5) — используй его. Иначе LIMIT 1000.
 3. Только SELECT — никаких INSERT/UPDATE/DELETE/DROP
 4. Отвечай СТРОГО JSON без markdown-блоков
 
@@ -244,7 +285,7 @@ def validate_and_fix_sql(sql: str, role: str = "user") -> str:
             if re.search(rf'\b{kw}\b', upper):
                 raise ValueError(f"Разрешены только SELECT-запросы. Обнаружено: {kw}")
 
-    allowed = {"orders"}
+    allowed = {"incity", "pass_detail", "driver_detail"}
 
     def _regex_validate(s: str) -> str:
         """Fallback validation when sqlglot can't parse the SQL."""

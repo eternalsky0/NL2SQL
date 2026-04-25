@@ -344,17 +344,20 @@ function ChartView({ columns, rows, type = 'bar' }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
   useEffect(() => {
-    if (!canvasRef.current || !rows || rows.length <= 1) return;
+    if (!canvasRef.current || !rows || rows.length === 0) return;
     if (chartRef.current) chartRef.current.destroy();
     const isPie = type === 'pie';
     const isLine = type === 'line';
+    // find first numeric column after index 0 to use as chart value
+    const valIdx = rows[0].findIndex((v, i) => i > 0 && !isNaN(Number(v)) && v !== '');
+    const dataIdx = valIdx > 0 ? valIdx : 1;
     chartRef.current = new Chart(canvasRef.current, {
       type: isPie ? 'pie' : isLine ? 'line' : 'bar',
       data: {
         labels: rows.map(r => String(r[0])).slice(0, 15),
         datasets: [{
-          label: columns[1] || '',
-          data: rows.map(r => Number(r[1]) || 0).slice(0, 15),
+          label: columns[dataIdx] || '',
+          data: rows.map(r => Number(r[dataIdx]) || 0).slice(0, 15),
           backgroundColor: isPie ? PIE_COLORS : '#1e1e1e',
           hoverBackgroundColor: isPie ? PIE_COLORS : '#96ea28',
           borderColor: isLine ? '#96ea28' : 'transparent',
@@ -718,7 +721,7 @@ function BotMessage({ msg }) {
   const conf = d?.confidence;
   const hasData = d?.data?.rows?.length > 0;
   const isKpi = hasData && d.data.columns.length === 1 && d.data.rows.length === 1;
-  const showChart = hasData && !isKpi && d.data.columns.length >= 2 && !isNaN(Number(d.data.rows[0]?.[1]));
+  const showChart = hasData && !isKpi && d.data.columns.length >= 2 && d.data.rows[0]?.slice(1).some(v => v !== '' && !isNaN(Number(v)));
 
   return (
     <div className="msg-bot">
@@ -1295,16 +1298,13 @@ function App() {
             <svg className="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Дашборд
           </a>
-          <div className={`nav-item ${view === 'archive' ? 'active' : ''}`} onClick={() => {setView('archive'); window.history.replaceState({}, '', '?view=archive');}}>
-            <Icons.Archive /> Архив
-          </div>
           <div className={`nav-item ${view === 'community' ? 'active' : ''}`} onClick={() => {setView('community'); window.history.replaceState({}, '', '?view=community');}}>
             <Icons.Community /> Сообщество
           </div>
         </nav>
         <div className="history-label">Недавние</div>
         <div className="chat-list">
-          {chats.map(c => (
+          {chats.slice(0, 10).map(c => (
             <div
               key={c.id}
               className={`chat-item ${currentChatId === c.id && view === 'chat' ? 'active' : ''}`}
@@ -1319,6 +1319,16 @@ function App() {
               </button>
             </div>
           ))}
+          {chats.length > 10 && (
+            <div
+              onClick={() => { setView('archive'); window.history.replaceState({}, '', '?view=archive'); }}
+              style={{ padding: '6px 16px', fontSize: 12, color: '#bbb', cursor: 'pointer', borderRadius: 8, transition: '0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color='#888'}
+              onMouseLeave={e => e.currentTarget.style.color='#bbb'}
+            >
+              Показать все ({chats.length})
+            </div>
+          )}
         </div>
         <div className="user-profile">
           <div className="user-name">{user.username}</div>
