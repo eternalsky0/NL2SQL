@@ -23,12 +23,11 @@
 | *Запасной* | `d.sezyomov` | `admin456` |
 | *Запасной* | `r.abramov` | `admin789` |
 
+---
 ## Требования
 
 - Python 3.10+
 - LLM-провайдер: [OpenRouter](https://openrouter.ai) (рекомендуется), Groq или Ollama (локально)
-
----
 
 ## Установка
 
